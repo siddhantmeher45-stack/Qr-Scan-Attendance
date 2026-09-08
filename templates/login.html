@@ -70,6 +70,29 @@
             background: #fffde7;
             box-shadow: 2px 2px 0 #000;
         }
+
+        @media (max-width: 600px) {
+
+            .login-nav {
+                padding: 0 0.85rem;
+            }
+            .nb-nav-logo {
+                font-size: 1.05rem !important;
+            }
+            .login-viewport {
+                height: auto !important;
+                min-height: 100vh !important;
+                overflow-y: auto !important;
+            }
+            .login-main {
+                padding: 1.25rem 0.75rem !important;
+                min-height: auto !important;
+                overflow: visible !important;
+            }
+            .login-card-compact {
+                padding: 1.15rem 0.95rem !important;
+            }
+        }
     </style>
 </head>
 <body class="dot-bg">
@@ -78,7 +101,7 @@
 
     <!-- ── Compact Navigation ── -->
     <nav class="login-nav">
-        <a class="nb-nav-logo" href="/" style="font-size:1.15rem; gap:0.5rem;">
+        <a class="nb-nav-logo" href="/" style="font-size:1.15rem; gap:0.5rem; text-decoration:none;">
             <div class="nb-nav-logo-icon" style="width:30px; height:30px; border-radius:6px; background:var(--black);">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px; height:18px;">
                     <rect x="3" y="3" width="7" height="7" rx="1" fill="#ffe17c"/>
@@ -91,11 +114,13 @@
             </div>
             <span>Attend<span style="background:#000; color:#ffe17c; padding:0.1rem 0.3rem; border-radius:3px; margin-left:2px;">QR</span></span>
         </a>
-        <div style="display:flex; gap:0.5rem;">
-            <a href="/register?role=student" class="btn btn-sm" style="padding:0.35rem 0.75rem; font-size:0.75rem;">Register Student</a>
-            <a href="/register?role=teacher" class="btn btn-sm" style="background:var(--sage); padding:0.35rem 0.75rem; font-size:0.75rem;">Register Teacher</a>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+            <a href="/register?role=student" class="btn btn-sm hide-mobile" style="padding:0.35rem 0.75rem; font-size:0.75rem; white-space:nowrap;">Register Student</a>
+            <a href="/register?role=teacher" class="btn btn-sm hide-mobile" style="background:var(--sage); padding:0.35rem 0.75rem; font-size:0.75rem; white-space:nowrap;">Register Teacher</a>
+            <a href="/register" class="btn btn-sm show-mobile" style="background:#000; color:var(--yellow); font-weight:800; padding:0.35rem 0.75rem; font-size:0.78rem; border-radius:6px; white-space:nowrap; box-shadow:2px 2px 0 rgba(0,0,0,0.3);">+ Register</a>
         </div>
     </nav>
+
 
     <!-- ── Perfectly Fitted Main Container ── -->
     <main class="login-main">

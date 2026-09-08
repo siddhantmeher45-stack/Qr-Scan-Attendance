@@ -637,6 +637,11 @@ code {
         display: none !important;
     }
 
+    .show-mobile {
+        display: inline-flex !important;
+    }
+
+
     /* Modals on mobile */
     .modal-content {
         padding: 1.25rem 0.95rem;
@@ -706,7 +711,12 @@ code {
     display: none !important;
 }
 
+.show-mobile {
+    display: none !important;
+}
+
 @keyframes pulse {
+
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
 }
