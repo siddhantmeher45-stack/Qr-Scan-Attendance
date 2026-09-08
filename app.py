@@ -16,8 +16,10 @@ from database import (
     close_attendance_session, get_active_session_for_teacher, mark_qr_attendance,
     get_session_live_attendance, get_student_attendance_history, get_student_stats,
     get_teacher_attendance_records, get_teacher_stats, get_all_attendance_for_export,
-    get_notifications_for_role, clear_attendance_history, init_db
+    get_notifications_for_role, clear_attendance_history, init_db,
+    finalize_all_expired_sessions, get_latest_session_for_teacher, finalize_attendance_session
 )
+
 
 app = Flask(__name__)
 app.secret_key = 'supersecret_college_qr_key_2026'
@@ -145,11 +147,15 @@ def student_dashboard():
     if session.get('role') != 'student':
         return redirect(url_for('login'))
 
+    # Finalize any expired sessions so absent students are recorded
+    finalize_all_expired_sessions()
+
     pid = session.get('pid')
     student = get_student_by_pid(pid)
     if not student:
         session.clear()
         return redirect(url_for('login'))
+
 
     stats = get_student_stats(pid)
     history = get_student_attendance_history(pid)
@@ -225,6 +231,9 @@ def teacher_dashboard():
     now = datetime.datetime.now()
     day_name = now.strftime('%A')
     
+    # Automatically finalize expired sessions across the system
+    finalize_all_expired_sessions()
+
     # Timetable for teacher
     today_schedule = get_teacher_timetable(teacher_name, day_name)
     all_teacher_schedule = get_teacher_timetable(teacher_name)
@@ -239,9 +248,30 @@ def teacher_dashboard():
     # Active session if any
     active_session = get_active_session_for_teacher(teacher_id)
     
+    # Check if there is an active session OR most recent session to show in the roster
+    current_session_for_roster = active_session or get_latest_session_for_teacher(teacher_id)
+    students_list = get_all_students()
+    
+    roster_data = None
+    if current_session_for_roster:
+        roster_data = get_session_live_attendance(current_session_for_roster['session_token'])
+        roster = roster_data['roster'] if roster_data else []
+    else:
+        roster = []
+        for s in students_list:
+            roster.append({
+                "pid": s['pid'],
+                "name": s['name'],
+                "roll_number": s['roll_number'],
+                "department": s['department'],
+                "year": s['year'],
+                "division": s['division'],
+                "status": "Absent",
+                "timestamp": "-"
+            })
+
     stats = get_teacher_stats(teacher_name)
     recent_records = get_teacher_attendance_records(teacher_name)
-    students_list = get_all_students()
     notifications = get_notifications_for_role('teacher', teacher_id)
 
     return render_template(
@@ -252,6 +282,9 @@ def teacher_dashboard():
         current_lecture=teacher_active_lec,
         upcoming_lecture=upcoming_lecture,
         active_session=active_session,
+        current_session_for_roster=current_session_for_roster,
+        roster=roster,
+        roster_data=roster_data,
         stats=stats,
         recent_records=recent_records,
         students=students_list,
@@ -270,31 +303,25 @@ def teacher_start_attendance():
         return jsonify({"success": False, "error": "Teacher profile not found"}), 404
 
     data = request.get_json(silent=True) or request.form
-    subject = data.get('subject', '').strip()
-    subject_code = data.get('subject_code', subject).strip()
-    class_name = data.get('class_name', 'Fourth Year B.E. ECS').strip()
-    division = data.get('division', 'A').strip().upper()
+    subject = data.get('subject', 'PLCA')
     duration = int(data.get('duration', 15))
 
-    # If no subject passed, attempt to grab from active timetable lecture
-    if not subject:
-        active_lec, _, _ = get_current_active_lecture()
-        if active_lec:
-            subject = active_lec['subject']
-            subject_code = active_lec['subject_code']
-        else:
-            # Fallback to teacher's first assigned subject
-            subjects = [s.strip() for s in teacher['subjects'].split(',') if s.strip()]
-            subject = subjects[0] if subjects else "General Lecture"
-            subject_code = subject
+    # Lookup subject code and teacher code
+    timetable = get_full_weekly_timetable()
+    subject_code = subject
+    for t in timetable:
+        if t['subject'] == subject:
+            subject_code = t['subject_code']
+            break
 
+    # Create dynamic attendance session
     new_session = create_attendance_session(
         teacher_id=teacher_id,
         teacher_name=teacher['name'],
         subject=subject,
         subject_code=subject_code,
-        class_name=class_name,
-        division=division,
+        class_name="Fourth Year B.E. ECS",
+        division="A",
         duration_minutes=duration
     )
 
@@ -319,8 +346,8 @@ def teacher_stop_attendance():
             session_token = active_session['session_token']
 
     if session_token:
-        close_attendance_session(session_token)
-        return jsonify({"success": True, "message": "Attendance session closed successfully."})
+        finalize_attendance_session(session_token)
+        return jsonify({"success": True, "message": "Attendance session closed successfully. All unscanned students marked absent."})
     
     return jsonify({"success": False, "error": "No active session found to close."}), 400
 

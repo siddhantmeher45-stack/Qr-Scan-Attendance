@@ -56,7 +56,7 @@
         {% endif %}
 
         <!-- Faculty Profile & Metrics Grid -->
-        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.25rem; margin-bottom:1.5rem;">
+        <div class="resp-grid-2-1">
             
             <!-- Faculty Profile Card -->
             <div class="nb-card">
@@ -147,28 +147,29 @@
             </div>
 
             <!-- Real-time Quick Counters -->
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem; margin-top:1.25rem; border-top:2px dashed #000; padding-top:1rem;">
+            <div class="resp-grid-4" style="margin-top:1.25rem; border-top:2px dashed #000; padding-top:1rem;">
                 <div style="background:#fff; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
                     <div style="font-size:0.75rem; font-weight:700; color:#666;">Enrolled Students</div>
                     <div style="font-size:1.5rem; font-weight:800;" id="quick-total">{{ students|length }}</div>
                 </div>
                 <div style="background:#e8f5e9; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
                     <div style="font-size:0.75rem; font-weight:700; color:#2e7d32;">Present (Scanned)</div>
-                    <div style="font-size:1.5rem; font-weight:800; color:#2e7d32;" id="quick-present">0</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#2e7d32;" id="quick-present">{{ roster_data['present_count'] if roster_data else 0 }}</div>
                 </div>
                 <div style="background:#ffebee; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
                     <div style="font-size:0.75rem; font-weight:700; color:#c62828;">Absent Count</div>
-                    <div style="font-size:1.5rem; font-weight:800; color:#c62828;" id="quick-absent">{{ students|length }}</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#c62828;" id="quick-absent">{{ roster_data['absent_count'] if roster_data else (students|length) }}</div>
                 </div>
                 <div style="background:#fff; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
                     <div style="font-size:0.75rem; font-weight:700; color:#666;">Live Turnout %</div>
-                    <div style="font-size:1.5rem; font-weight:800; color:#000;" id="quick-pct">0%</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#000;" id="quick-pct">{{ roster_data['attendance_pct'] if roster_data else 0 }}%</div>
                 </div>
             </div>
         </div>
 
         <!-- ── Schedule & Live Timetable Section ── -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.5rem;">
+        <div class="resp-grid-2">
+
             
             <!-- Today's Schedule for Teacher -->
             <div class="nb-card">
@@ -248,42 +249,64 @@
 
         <!-- ── Live Student Attendance Feed & Roster ── -->
         <div class="nb-card" style="margin-bottom:1.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
                 <div>
                     <h2 style="margin:0; font-size:1.35rem; font-weight:800; display:flex; align-items:center; gap:0.5rem;">
                         <span>👥</span> Class Roster & Real-Time Attendance Stream
                     </h2>
-                    <p style="margin:0.25rem 0 0 0; font-size:0.8rem; color:#555;">Live list of students for Fourth Year B.E. ECS (Division A) with anti-proxy validation</p>
+                    <p style="margin:0.25rem 0 0 0; font-size:0.8rem; color:#555;">
+                        {% if current_session_for_roster %}
+                        Live stream for <strong>{{ current_session_for_roster['subject'] }}</strong> ({{ current_session_for_roster['date'] }} • {{ current_session_for_roster['start_time'] }}) — Div {{ current_session_for_roster['division'] }}
+                        {% else %}
+                        Live list of students for Fourth Year B.E. ECS (Division A) with anti-proxy validation
+                        {% endif %}
+                    </p>
                 </div>
                 <div style="display:flex; gap:0.5rem;">
-                    <span class="badge" style="background:#e8f5e9; color:#1b5e20; border:1.5px solid #000; font-weight:700;">🟢 Live Auto-Polling Enabled</span>
+                    {% if active_session %}
+                    <span class="badge" style="background:#e8f5e9; color:#1b5e20; border:1.5px solid #000; font-weight:700;">🟢 Live Auto-Polling Active</span>
+                    {% else %}
+                    <span class="badge" style="background:#f4f4f5; color:#333; border:1.5px solid #000; font-weight:700;">📁 Current Session Roster</span>
+                    {% endif %}
                 </div>
             </div>
 
-            {% if students %}
-            <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+            {% if roster %}
+            <div class="table-wrap" style="max-height:360px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
                 <table class="nb-table" id="roster-table">
                     <thead>
                         <tr>
-                            <th>Roll No.</th>
+                            <th>Roll</th>
                             <th>PID</th>
                             <th>Student Name</th>
-                            <th>Department / Year</th>
-                            <th>Division</th>
+                            <th class="hide-mobile">Department / Year</th>
+                            <th>Div</th>
                             <th>Scan Timestamp</th>
                             <th>Live Status</th>
                         </tr>
                     </thead>
                     <tbody id="roster-tbody">
-                        {% for s in students %}
-                        <tr id="row-{{ s['pid'] }}">
+                        {% for s in roster %}
+                        <tr id="row-{{ s['pid'] }}" style="{{ 'background:#e8f5e9;' if s['status'] == 'Present' else '' }}">
                             <td><strong>{{ s['roll_number'] }}</strong></td>
                             <td><code>{{ s['pid'] }}</code></td>
                             <td><span style="font-weight:700;">{{ s['name'] }}</span></td>
-                            <td>{{ s['department'] }} - {{ s['year'] }}</td>
+                            <td class="hide-mobile">{{ s['department'] }} - {{ s['year'] }}</td>
                             <td><span class="badge" style="background:#f4f4f5; border:1px solid #000;">{{ s['division'] }}</span></td>
-                            <td class="scan-time">-</td>
-                            <td><span class="badge badge-danger status-badge">Absent</span></td>
+                            <td class="scan-time">
+                                {% if s['status'] == 'Present' and s['timestamp'] != '-' %}
+                                <code>{{ s['timestamp'].split(' ')[1] if ' ' in s['timestamp'] else s['timestamp'] }}</code>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s['status'] == 'Present' %}
+                                <span class="badge badge-success status-badge">✓ Present</span>
+                                {% else %}
+                                <span class="badge badge-danger status-badge">Absent</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -321,12 +344,12 @@
             </div>
 
             {% if recent_records %}
-            <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+            <div class="table-wrap" style="max-height:300px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
                 <table class="nb-table">
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Lecture Time</th>
+                            <th class="hide-mobile">Lecture Time</th>
                             <th>Subject</th>
                             <th>PID</th>
                             <th>Student Name</th>
@@ -339,17 +362,24 @@
                         {% for r in recent_records[:30] %}
                         <tr>
                             <td><strong>{{ r['date'] }}</strong></td>
-                            <td>{{ r['lecture_time'] }}</td>
+                            <td class="hide-mobile">{{ r['lecture_time'] }}</td>
                             <td><span style="font-weight:700;">{{ r['subject'] }}</span></td>
                             <td><code>{{ r['pid'] }}</code></td>
                             <td>{{ r['student_name'] }}</td>
                             <td>{{ r['roll_number'] }}</td>
-                            <td><code style="font-size:0.78rem;">{{ r['timestamp'].split(' ')[1] }}</code></td>
-                            <td><span class="badge badge-success">✓ {{ r['status'] }}</span></td>
+                            <td><code style="font-size:0.78rem;">{{ r['timestamp'].split(' ')[1] if ' ' in r['timestamp'] else r['timestamp'] }}</code></td>
+                            <td>
+                                {% if r['status'] == 'Present' %}
+                                <span class="badge badge-success">✓ Present</span>
+                                {% else %}
+                                <span class="badge badge-danger">Absent</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+
             </div>
             {% else %}
             <div style="padding:2.5rem 1.5rem; text-align:center; color:#555; background:#fafafa; border:2px dashed #000; border-radius:8px;">
@@ -664,8 +694,14 @@
                             if (student.status === 'Present') {
                                 badge.className = 'badge badge-success status-badge';
                                 badge.innerText = '✓ Present';
-                                timeCell.innerHTML = `<code>${student.timestamp.split(' ')[1]}</code>`;
+                                const timeDisplay = (student.timestamp && student.timestamp.includes(' ')) ? student.timestamp.split(' ')[1] : (student.timestamp || '-');
+                                timeCell.innerHTML = `<code>${timeDisplay}</code>`;
                                 row.style.background = '#e8f5e9';
+                            } else {
+                                badge.className = 'badge badge-danger status-badge';
+                                badge.innerText = 'Absent';
+                                timeCell.innerText = '-';
+                                row.style.background = '';
                             }
                         }
                     });
@@ -673,6 +709,7 @@
             })
             .catch(err => console.log("Live polling err:", err));
         }
+
 
         // If session was already active on page load, start polling immediately
         if (currentActiveToken) {

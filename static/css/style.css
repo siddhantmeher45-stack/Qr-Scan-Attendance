@@ -517,25 +517,188 @@ code {
     font-weight: 700;
 }
 
-/* ── Responsive adjustments ── */
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
+/* ── Responsive Layout Utilities ── */
+.resp-grid-2-1 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.resp-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.resp-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.resp-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+/* ── Responsive adjustments for Mobile & Tablets ── */
+@media (max-width: 992px) {
+    .resp-grid-2-1 {
+        grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+    }
+
+    .container {
+        padding: 0.85rem 0.75rem;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     .nb-nav {
-        padding: 0 1rem;
+        padding: 0.6rem 0.85rem;
         height: auto;
-        min-height: 60px;
+        min-height: 56px;
         flex-wrap: wrap;
         gap: 0.5rem;
     }
-    .nb-card, .login-card {
-        padding: 1.25rem 1rem;
+
+    .nb-nav-logo {
+        font-size: 1.15rem;
     }
+
+    .nb-nav-logo-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .nb-nav-right {
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .nb-nav-right .btn {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.78rem;
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .nb-card, .login-card {
+        padding: 1.15rem 0.85rem;
+        box-shadow: 4px 4px 0 #000;
+        border-radius: 10px;
+    }
+
+    .resp-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .resp-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+    }
+
+    .resp-grid-3 {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+    }
+
     .schedule-card {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
+    }
+
+    /* Tables on mobile */
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 8px;
+    }
+
+    .nb-table th, .nb-table td {
+        padding: 0.55rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* Modals on mobile */
+    .modal-content {
+        padding: 1.25rem 0.95rem;
+        max-width: 95%;
+        width: 95%;
+        max-height: 92vh;
+    }
+
+    /* Scanner Viewfinder on mobile */
+    #qr-reader {
+        width: 100% !important;
+        max-width: 280px !important;
+        margin: 0 auto;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #qr-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover !important;
+        border-radius: 8px;
+    }
+
+    /* Inputs on mobile: at least 16px to prevent iOS zooming */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 16px;
+        padding: 0.65rem 0.75rem;
+    }
+
+    /* Touch buttons */
+    .btn {
+        min-height: 40px;
+    }
+
+    /* Fix login viewport on mobile screens */
+    .login-viewport {
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+    }
+
+    .login-main {
+        min-height: auto !important;
+        padding: 1.25rem 0.75rem !important;
+        overflow: visible !important;
+    }
+
+    .login-card-compact {
+        padding: 1.2rem 1rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .resp-grid-4 {
+        grid-template-columns: 1fr;
     }
 }
 

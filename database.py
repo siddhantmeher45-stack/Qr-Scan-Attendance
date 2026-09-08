@@ -238,13 +238,103 @@ def get_session_by_token(session_token):
     conn.close()
     return session_row
 
-def close_attendance_session(session_token):
-    conn = get_db_connection()
-    conn.execute("UPDATE attendance_sessions SET status = 'closed' WHERE session_token = ?", (session_token,))
+def finalize_attendance_session(session_id_or_token, conn=None):
+    """
+    Closes an attendance session AND automatically marks all enrolled students
+    who did not scan the QR code in time as 'Absent' in attendance_records.
+    """
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+
+    cursor = conn.cursor()
+    if isinstance(session_id_or_token, int) or (isinstance(session_id_or_token, str) and session_id_or_token.isdigit()):
+        session_row = cursor.execute("SELECT * FROM attendance_sessions WHERE id = ?", (int(session_id_or_token),)).fetchone()
+    else:
+        session_row = cursor.execute("SELECT * FROM attendance_sessions WHERE session_token = ?", (str(session_id_or_token),)).fetchone()
+
+    if not session_row:
+        if should_close: conn.close()
+        return
+
+    session_id = session_row['id']
+    session_token = session_row['session_token']
+    division = session_row['division']
+    subject = session_row['subject']
+    teacher_name = session_row['teacher_name']
+    session_date = session_row['date']
+    lecture_time = f"{session_row['start_time']} - {session_row['end_time']}"
+    expires_at = session_row['expires_at']
+    try:
+        day_name = datetime.datetime.strptime(session_date, '%Y-%m-%d').strftime('%A')
+    except Exception:
+        day_name = datetime.datetime.now().strftime('%A')
+
+    # 1. Update session status to closed
+    cursor.execute("UPDATE attendance_sessions SET status = 'closed' WHERE id = ?", (session_id,))
+
+    # 2. Get all enrolled students for this division
+    enrolled_students = cursor.execute(
+        "SELECT * FROM students WHERE UPPER(division) = UPPER(?)",
+        (division,)
+    ).fetchall()
+
+    # 3. Get students who already marked attendance
+    existing_records = cursor.execute(
+        "SELECT pid FROM attendance_records WHERE session_id = ?",
+        (session_id,)
+    ).fetchall()
+    marked_pids = {r['pid'] for r in existing_records}
+
+    # 4. Automatically insert Absent record for any student who didn't scan in time
+    for s in enrolled_students:
+        if s['pid'] not in marked_pids:
+            cursor.execute('''
+                INSERT OR IGNORE INTO attendance_records 
+                (session_id, session_token, pid, student_name, roll_number, department, year, division, subject, teacher_name, date, day, lecture_time, timestamp, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Absent')
+            ''', (
+                session_id, session_token, s['pid'], s['name'], s['roll_number'],
+                s['department'], s['year'], s['division'], subject,
+                teacher_name, session_date, day_name, lecture_time,
+                expires_at, 'Absent'
+            ))
+
     conn.commit()
+    if should_close:
+        conn.close()
+
+def close_attendance_session(session_token):
+    finalize_attendance_session(session_token)
+
+def finalize_all_expired_sessions():
+    """
+    Finds all active sessions whose expiration time has passed, marks them closed,
+    and automatically marks unscanned students as Absent.
+    """
+    conn = get_db_connection()
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor = conn.cursor()
+    expired = cursor.execute(
+        "SELECT id FROM attendance_sessions WHERE status = 'active' AND expires_at <= ?",
+        (now_str,)
+    ).fetchall()
+    for row in expired:
+        finalize_attendance_session(row['id'], conn=conn)
     conn.close()
 
+def get_latest_session_for_teacher(teacher_id):
+    conn = get_db_connection()
+    session_row = conn.execute(
+        "SELECT * FROM attendance_sessions WHERE teacher_id = ? ORDER BY id DESC LIMIT 1",
+        (teacher_id,)
+    ).fetchone()
+    conn.close()
+    return session_row
+
 def get_active_session_for_teacher(teacher_id):
+    finalize_all_expired_sessions()
     conn = get_db_connection()
     session_row = conn.execute(
         "SELECT * FROM attendance_sessions WHERE teacher_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1",
@@ -256,9 +346,10 @@ def get_active_session_for_teacher(teacher_id):
         now = datetime.datetime.now()
         expires_at = datetime.datetime.strptime(session_row['expires_at'], '%Y-%m-%d %H:%M:%S')
         if now > expires_at:
-            close_attendance_session(session_row['session_token'])
+            finalize_attendance_session(session_row['id'])
             return None
     return session_row
+
 
 # ----------------- QR ATTENDANCE VALIDATION & RECORDING -----------------
 
@@ -313,17 +404,31 @@ def mark_qr_attendance(session_token, student_pid):
         (session_row['id'], student['pid'])
     ).fetchone()
     if existing:
+        if existing['status'] == 'Present':
+            conn.close()
+            return False, "Attendance already marked! Duplicate submission prevented."
+        # If student was marked Absent by timeout/re-open, allow them to mark Present now:
+        day_name = now.strftime('%A')
+        timestamp_str = now.strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            UPDATE attendance_records 
+            SET status = 'Present', timestamp = ?
+            WHERE session_id = ? AND pid = ?
+        ''', (timestamp_str, session_row['id'], student['pid']))
+        conn.commit()
         conn.close()
-        return False, "Attendance already marked! Duplicate submission prevented."
+        return True, {
+            "record_id": existing['id'],
+            "pid": student['pid'],
+            "name": student['name'],
+            "roll_number": student['roll_number'],
+            "subject": session_row['subject'],
+            "teacher": session_row['teacher_name'],
+            "date": session_row['date'],
+            "timestamp": timestamp_str,
+            "status": "Present"
+        }
 
-    # Secondary duplicate check: same PID, same Subject, same Date
-    same_day_check = cursor.execute('''
-        SELECT * FROM attendance_records 
-        WHERE pid = ? AND subject = ? AND date = ? AND session_id = ?
-    ''', (student['pid'], session_row['subject'], session_row['date'], session_row['id'])).fetchone()
-    if same_day_check:
-        conn.close()
-        return False, "Attendance already marked for this lecture today."
 
     # Step 7: Record Attendance
     day_name = now.strftime('%A')
@@ -365,20 +470,20 @@ def get_session_live_attendance(session_token):
 
     # Get enrolled students for this division
     enrolled_students = conn.execute(
-        'SELECT * FROM students WHERE division = ? ORDER BY roll_number ASC',
+        'SELECT * FROM students WHERE UPPER(division) = UPPER(?) ORDER BY CAST(roll_number AS INTEGER) ASC, roll_number ASC',
         (session_row['division'],)
     ).fetchall()
 
-    # Get present records for this session
-    present_records = conn.execute(
+    # Get records for this session
+    session_records = conn.execute(
         'SELECT * FROM attendance_records WHERE session_id = ? ORDER BY timestamp DESC',
         (session_row['id'],)
     ).fetchall()
     
     conn.close()
 
-    present_pids = {r['pid']: dict(r) for r in present_records}
-    present_list = [dict(r) for r in present_records]
+    present_pids = {r['pid']: dict(r) for r in session_records if r['status'] == 'Present'}
+    present_list = [dict(r) for r in session_records if r['status'] == 'Present']
     
     total_enrolled = len(enrolled_students)
     present_count = len(present_list)
@@ -393,6 +498,9 @@ def get_session_live_attendance(session_token):
             "pid": s['pid'],
             "name": s['name'],
             "roll_number": s['roll_number'],
+            "department": s['department'],
+            "year": s['year'],
+            "division": s['division'],
             "status": "Present" if is_present else "Absent",
             "timestamp": present_pids[s['pid']]['timestamp'] if is_present else "-"
         })
@@ -422,8 +530,8 @@ def get_student_attendance_history(pid):
 def get_student_stats(pid):
     conn = get_db_connection()
     
-    # All records for this student
-    records = conn.execute('SELECT * FROM attendance_records WHERE pid = ?', (pid,)).fetchall()
+    # All present records for this student
+    attended_records = conn.execute("SELECT * FROM attendance_records WHERE pid = ? AND status = 'Present'", (pid,)).fetchall()
     
     # Total sessions held for Division A
     total_sessions = conn.execute('''
@@ -446,7 +554,7 @@ def get_student_stats(pid):
         # Attended count
         attended_count = conn.execute('''
             SELECT COUNT(*) FROM attendance_records 
-            WHERE pid = ? AND (subject = ? OR subject LIKE ?)
+            WHERE pid = ? AND (subject = ? OR subject LIKE ?) AND status = 'Present'
         ''', (pid, sub_code, f"{sub_code}%")).fetchone()[0]
 
         # Use realistic baseline if newly created
@@ -467,7 +575,7 @@ def get_student_stats(pid):
 
     conn.close()
 
-    total_attended = len(records)
+    total_attended = len(attended_records)
     total_classes = max(total_sessions, total_attended, 1) if total_sessions > 0 or total_attended > 0 else 0
     overall_percentage = round((total_attended / total_classes) * 100, 1) if total_classes > 0 else 0.0
     total_absent = max(0, total_classes - total_attended)
@@ -506,8 +614,8 @@ def get_teacher_stats(teacher_name):
     sessions = conn.execute('SELECT * FROM attendance_sessions WHERE teacher_name LIKE ?', (f'%{teacher_name}%',)).fetchall()
     total_sessions = len(sessions)
 
-    # Total attendance marks
-    total_present = conn.execute('SELECT COUNT(*) FROM attendance_records WHERE teacher_name LIKE ?', (f'%{teacher_name}%',)).fetchone()[0]
+    # Total attendance marks (Present only)
+    total_present = conn.execute("SELECT COUNT(*) FROM attendance_records WHERE teacher_name LIKE ? AND status = 'Present'", (f'%{teacher_name}%',)).fetchone()[0]
 
     # Total enrolled students in Div A
     total_students = conn.execute("SELECT COUNT(*) FROM students WHERE division = 'A'").fetchone()[0]
@@ -521,6 +629,7 @@ def get_teacher_stats(teacher_name):
         "total_students": total_students,
         "average_attendance": avg_pct
     }
+
 
 # ----------------- EXPORT TO EXCEL QUERIES -----------------
 
