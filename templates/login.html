@@ -3,32 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AttendQR | College Attendance Portal</title>
-    <meta name="description" content="QR-Code Based College Attendance Management System for Fourth Year B.E. ECS.">
+    <title>AttendQR | Sign In</title>
+    <meta name="description" content="QR-Code Attendance Portal - Sign In">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        html, body {
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-            background-color: var(--yellow);
-        }
-        .login-viewport {
+        .login-page-wrap {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            box-sizing: border-box;
+            background-color: var(--yellow, #ffe17c);
         }
         .login-nav {
-            height: 56px;
-            min-height: 56px;
-            background: var(--yellow);
+            height: 60px;
+            background: var(--yellow, #ffe17c);
             border-bottom: 2px solid #000;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1.25rem;
-            z-index: 50;
+            padding: 0 1.5rem;
             box-sizing: border-box;
         }
         .login-main {
@@ -36,61 +28,95 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem 1rem;
+            padding: 2.5rem 1.25rem 3.5rem 1.25rem;
             box-sizing: border-box;
         }
-        .login-card-compact {
+        .login-card-simple {
             max-width: 440px;
             width: 100%;
             background: #ffffff;
             border: 3px solid #000000;
-            border-radius: 12px;
-            padding: 1.5rem 1.6rem;
-            box-shadow: 6px 6px 0px #000000;
+            border-radius: 14px;
+            padding: 2.5rem 2rem;
+            box-shadow: var(--shadow-lg, 6px 6px 0px #000000);
             box-sizing: border-box;
         }
-        .compact-input {
-            width: 100%;
-            padding: 0.6rem 0.8rem;
+        .role-switch-container {
+            display: flex;
+            background: var(--gray-light, #f4f4f5);
             border: 2px solid #000000;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 600;
-            box-sizing: border-box;
-            background: #fff;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 6px;
+            margin-bottom: 1.75rem;
         }
-        .compact-input:focus {
+        .role-btn {
+            flex: 1;
+            padding: 0.7rem 0.85rem;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #555;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .role-btn.active {
+            background: var(--yellow, #ffe17c);
+            color: #000000;
+            border-color: #000000;
+            box-shadow: 2px 2px 0 #000000;
+        }
+        .login-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid #000000;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-sizing: border-box;
+            background: #ffffff;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .login-input:focus {
             outline: none;
             background: #fffde7;
-            box-shadow: 2.5px 2.5px 0 #000;
+            box-shadow: 3px 3px 0 #000000;
         }
-
         @media (max-width: 600px) {
             .login-nav {
-                padding: 0 0.85rem;
-            }
-            .nb-nav-logo {
-                font-size: 1.05rem !important;
+                padding: 0 1rem;
             }
             .login-main {
-                padding: 1.25rem 0.85rem !important;
+                padding: 1.5rem 1rem 2.5rem 1rem;
             }
-            .login-card-compact {
-                padding: 1.25rem 1.1rem !important;
+            .login-card-simple {
+                padding: 1.75rem 1.35rem;
+            }
+            .role-btn {
+                font-size: 0.82rem;
+                padding: 0.6rem 0.4rem;
             }
         }
     </style>
 </head>
 <body class="dot-bg">
 
-<div class="login-viewport">
+<div class="login-page-wrap">
 
-    <!-- ── Compact Navigation ── -->
+    <!-- ── Clean Navigation ── -->
     <nav class="login-nav">
         <a class="nb-nav-logo" href="/" style="font-size:1.15rem; gap:0.5rem; text-decoration:none;">
-            <div class="nb-nav-logo-icon" style="width:30px; height:30px; border-radius:6px; background:var(--black);">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px; height:18px;">
+            <div class="nb-nav-logo-icon" style="width:34px; height:34px; border-radius:7px; background:var(--black); display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px; height:20px;">
                     <rect x="3" y="3" width="7" height="7" rx="1" fill="#ffe17c"/>
                     <rect x="14" y="3" width="7" height="7" rx="1" fill="#ffe17c"/>
                     <rect x="3" y="14" width="7" height="7" rx="1" fill="#ffe17c"/>
@@ -99,44 +125,36 @@
                     <rect x="14" y="18" width="3" height="3" fill="#ffe17c"/>
                 </svg>
             </div>
-            <span>Attend<span style="background:#000; color:#ffe17c; padding:0.1rem 0.3rem; border-radius:3px; margin-left:2px;">QR</span></span>
+            <span>Attend<span style="background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; margin-left:2px;">QR</span></span>
         </a>
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-            <a href="/register?role=student" class="btn btn-sm hide-mobile" style="padding:0.35rem 0.75rem; font-size:0.75rem; white-space:nowrap;">Register Student</a>
-            <a href="/register?role=teacher" class="btn btn-sm hide-mobile" style="background:var(--sage); padding:0.35rem 0.75rem; font-size:0.75rem; white-space:nowrap;">Register Teacher</a>
-            <a href="/register" class="btn btn-sm show-mobile" style="background:#000; color:var(--yellow); font-weight:800; padding:0.35rem 0.75rem; font-size:0.78rem; border-radius:6px; white-space:nowrap; box-shadow:2px 2px 0 rgba(0,0,0,0.3);">+ Register</a>
+        <div>
+            <a href="/register" class="btn btn-sm" style="font-size:0.85rem; padding:0.45rem 0.9rem; font-weight:700;">Create Account →</a>
         </div>
     </nav>
 
-
-    <!-- ── Perfectly Fitted Main Container ── -->
+    <!-- ── Spacious Main Container ── -->
     <main class="login-main">
-        <div class="login-card-compact">
+        <div class="login-card-simple">
 
-            <!-- Card Header -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.25rem;">
-                <div>
-                    <span class="badge badge-warning" style="font-size:0.65rem; padding:0.1rem 0.45rem; margin-bottom:0.2rem; display:inline-block;">Fourth Year B.E. ECS</span>
-                    <h2 style="margin:0; font-size:1.35rem; font-weight:800;">Sign In</h2>
-                </div>
-                <div style="font-size:1.5rem; line-height:1;">⚡</div>
+            <!-- Clean Header without Clutter -->
+            <div style="margin-bottom:1.5rem;">
+                <h1 style="margin:0 0 0.4rem 0; font-size:1.85rem; font-weight:800; letter-spacing:-0.02em;">Sign In</h1>
+                <p style="margin:0; color:#666; font-size:0.92rem;">Enter your credentials to access your attendance portal</p>
             </div>
-            
-            <p style="font-size:0.76rem; color:#555; margin:0 0 0.65rem 0;">QR-Based Timetable-Synchronized Attendance Portal</p>
 
             {% if error %}
-            <div style="background:#ffebee; border:2px solid #c62828; padding:0.4rem 0.65rem; border-radius:6px; margin-bottom:0.6rem; font-size:0.78rem; color:#b71c1c; font-weight:700;">
+            <div style="background:#ffebee; border:2px solid #c62828; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:0.85rem; color:#b71c1c; font-weight:700;">
                 ⚠️ {{ error }}
             </div>
             {% endif %}
 
-            <!-- Segmented Role Switch -->
-            <div class="role-toggle" style="margin-bottom:0.65rem; padding:2px; gap:2px;">
-                <button type="button" class="role-option {% if role != 'teacher' %}active{% endif %}" id="btn-student" onclick="setRole('student')" style="padding:0.4rem 0.5rem; font-size:0.8rem;">
-                    <span>🎓</span> Student Login
+            <!-- Spacious Role Switcher -->
+            <div class="role-switch-container">
+                <button type="button" class="role-btn {% if role != 'teacher' %}active{% endif %}" id="btn-student" onclick="setRole('student')">
+                    <span>🎓</span> Student
                 </button>
-                <button type="button" class="role-option {% if role == 'teacher' %}active{% endif %}" id="btn-teacher" onclick="setRole('teacher')" style="padding:0.4rem 0.5rem; font-size:0.8rem;">
-                    <span>👨‍🏫</span> Teacher Login
+                <button type="button" class="role-btn {% if role == 'teacher' %}active{% endif %}" id="btn-teacher" onclick="setRole('teacher')">
+                    <span>👨‍🏫</span> Teacher
                 </button>
             </div>
 
@@ -144,72 +162,39 @@
             <form action="/login-post" method="POST" id="login-form">
                 <input type="hidden" name="role" id="role-input" value="{{ role or 'student' }}">
 
-                <div class="input-group" style="margin-bottom:0.55rem;">
-                    <label id="identifier-label" style="display:block; font-weight:700; margin-bottom:0.2rem; font-size:0.78rem;">Personal ID (PID) / Email / Roll</label>
+                <div class="input-group" style="margin-bottom:1.25rem;">
+                    <label id="identifier-label" for="identifier-input" style="display:block; font-weight:700; margin-bottom:0.4rem; font-size:0.88rem;">
+                        Personal ID (PID) / Email / Roll Number
+                    </label>
                     <input type="text" name="identifier" id="identifier-input" 
-                           class="compact-input"
+                           class="login-input"
                            placeholder="e.g. ECS2026001 or aryan@college.edu" 
                            autocomplete="username" required>
                 </div>
 
-                <div class="input-group" style="margin-bottom:0.75rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">
-                        <label style="font-weight:700; font-size:0.78rem;">Password</label>
-                        <span style="font-size:0.7rem; color:#666;">Case sensitive</span>
+                <div class="input-group" style="margin-bottom:1.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                        <label for="password-input" style="font-weight:700; font-size:0.88rem;">Password</label>
+                        <span style="font-size:0.75rem; color:#777;">Case sensitive</span>
                     </div>
                     <input type="password" name="password" id="password-input" 
-                           class="compact-input"
+                           class="login-input"
                            placeholder="••••••••" autocomplete="current-password" required>
                 </div>
 
-                <button type="submit" class="btn btn-sm" id="login-btn" style="width:100%; padding:0.6rem 1rem; font-size:0.92rem; font-weight:800; justify-content:center; box-shadow:3px 3px 0 #000;">
-                    Sign In to Portal →
+                <button type="submit" class="btn" id="login-btn" style="width:100%; padding:0.9rem; font-size:1.02rem; font-weight:800; justify-content:center; box-shadow:3px 3px 0 #000;">
+                    Sign In →
                 </button>
             </form>
 
-            <!-- Dynamic Registration Callout Based on Selected Role -->
-            <div id="registration-prompt" style="margin-top:0.75rem; text-align:center; font-size:0.82rem; padding:0.5rem 0.65rem; border-radius:6px; background:#f9f9fa; border:1.5px solid #000; box-shadow:2px 2px 0 #000;">
-                <div id="student-reg-prompt">
-                    New student? <a href="/register?role=student" style="color:#000; font-weight:800; text-decoration:underline;">Create Student Account & QR →</a>
+            <!-- Clean, Uncluttered Footer -->
+            <div style="margin-top:1.75rem; text-align:center; font-size:0.88rem; color:#555;">
+                Don't have an account?
+                <div style="margin-top:0.4rem; display:flex; justify-content:center; gap:0.6rem; font-weight:700;">
+                    <a href="/register?role=student" style="color:#000; text-decoration:underline;">Register Student</a>
+                    <span style="color:#aaa;">•</span>
+                    <a href="/register?role=teacher" style="color:#000; text-decoration:underline;">Register Teacher</a>
                 </div>
-                <div id="teacher-reg-prompt" style="display:none;">
-                    New faculty member? <a href="/register?role=teacher" style="color:#000; font-weight:800; text-decoration:underline;">Register Teacher Account (Code Required) 👨‍🏫 →</a>
-                </div>
-            </div>
-
-            <!-- Quick Demo Accounts (Collapsible for Clean Production Appearance) -->
-            <details class="demo-credentials-accordion">
-                <summary>
-                    <span>⚡ Quick Registration & Demo Fill</span>
-                    <span style="font-size:0.65rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:3px; font-weight:700;">OPTIONS</span>
-                </summary>
-                <div class="demo-credentials-body">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem; margin-bottom:0.45rem;">
-                        <a href="/register?role=student" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f9f9fa'">
-                            <div style="font-weight:800; font-size:0.74rem;">🎓 Student Sign Up</div>
-                            <div style="font-size:0.68rem; color:#444;">Register fresh PID</div>
-                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Student Register →</div>
-                        </a>
-                        <a href="/register?role=teacher" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#b7c6c2'" onmouseout="this.style.background='#f9f9fa'">
-                            <div style="font-weight:800; font-size:0.74rem;">👨‍🏫 Teacher Sign Up</div>
-                            <div style="font-size:0.68rem; color:#444;">Code required</div>
-                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Teacher Register →</div>
-                        </a>
-                    </div>
-                    <div style="border-top:1px dashed #ccc; padding-top:0.35rem; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.68rem; color:#666;">Or 1-click fill faculty:</span>
-                        <div onclick="fillDemo('teacher', 'T_VR', 'teacher123')" style="cursor:pointer; background:#f4f4f5; border:1px solid #000; border-radius:4px; padding:0.2rem 0.5rem; font-size:0.72rem; font-weight:800;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f4f4f5'">
-                            ⚡ Fill Teacher (T_VR)
-                        </div>
-                    </div>
-                </div>
-            </details>
-
-            <!-- Footer Links -->
-            <div style="margin-top:0.6rem; font-size:0.75rem; color:#555; text-align:center; display:flex; justify-content:center; gap:1rem;">
-                <a href="/register?role=student" style="color:#000; font-weight:700; text-decoration:underline;">Register Student</a>
-                <span>•</span>
-                <a href="/register?role=teacher" style="color:#000; font-weight:700; text-decoration:underline;">Register Teacher</a>
             </div>
 
         </div>
@@ -224,8 +209,6 @@
         const teacherBtn = document.getElementById('btn-teacher');
         const identifierLabel = document.getElementById('identifier-label');
         const identifierInput = document.getElementById('identifier-input');
-        const studentPrompt = document.getElementById('student-reg-prompt');
-        const teacherPrompt = document.getElementById('teacher-reg-prompt');
 
         roleInput.value = selectedRole;
 
@@ -234,22 +217,12 @@
             teacherBtn.classList.add('active');
             identifierLabel.textContent = "Teacher ID / Faculty Email";
             identifierInput.placeholder = "e.g. T_VR or vr@college.edu";
-            studentPrompt.style.display = 'none';
-            teacherPrompt.style.display = 'block';
         } else {
             teacherBtn.classList.remove('active');
             studentBtn.classList.add('active');
             identifierLabel.textContent = "Personal ID (PID) / Email / Roll Number";
             identifierInput.placeholder = "e.g. ECS2026001 or aryan@college.edu";
-            teacherPrompt.style.display = 'none';
-            studentPrompt.style.display = 'block';
         }
-    }
-
-    function fillDemo(role, identifier, password) {
-        setRole(role);
-        document.getElementById('identifier-input').value = identifier;
-        document.getElementById('password-input').value = password;
     }
 
     // Initialize state based on server-rendered role

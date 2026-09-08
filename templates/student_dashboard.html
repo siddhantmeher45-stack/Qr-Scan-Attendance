@@ -159,25 +159,25 @@
                     <div style="width:48px; height:48px; background:var(--yellow); border:2px solid #000; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:2px 2px 0 #000; flex-shrink:0;">
                         ⏰
                     </div>
-                    <div>
+                    <div id="live-timetable-banner-text">
                         {% if current_lecture %}
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
-                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">LIVE LECTURE NOW</span>
-                            <strong style="font-size:1.15rem;">{{ current_lecture['subject'] }} ({{ current_lecture['subject_code'] }})</strong>
+                            <span class="badge badge-warning" id="live-banner-badge" style="background:#ff5f57; color:#fff;">LIVE LECTURE NOW</span>
+                            <strong style="font-size:1.15rem;" id="live-banner-title">{{ current_lecture['subject'] }} ({{ current_lecture['subject_code'] }})</strong>
                         </div>
-                        <div style="font-size:0.85rem; color:#555;">
+                        <div style="font-size:0.85rem; color:#555;" id="live-banner-subtitle">
                             👨‍🏫 {{ current_lecture['teacher_name'] }} | 🚪 Room: {{ current_lecture['room'] }} | ⏱ {{ current_lecture['start_time'] }} - {{ current_lecture['end_time'] }}
                         </div>
                         {% else %}
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
-                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">Timetable Standby</span>
-                            <strong style="font-size:1.05rem;">No Active Lecture At This Moment</strong>
+                            <span class="badge" id="live-banner-badge" style="background:#f4f4f5; border:1px solid #000;">Timetable Standby</span>
+                            <strong style="font-size:1.05rem;" id="live-banner-title">No Active Lecture At This Moment</strong>
                         </div>
-                        <div style="font-size:0.85rem; color:#666;">
+                        <div style="font-size:0.85rem; color:#666;" id="live-banner-subtitle">
                             {% if upcoming_lecture %}
                             Next up: <strong>{{ upcoming_lecture['subject'] }}</strong> ({{ upcoming_lecture['teacher_name'] }}) at {{ upcoming_lecture['start_time'] }}
                             {% else %}
-                            Regular lecture cycle is in standby or break period.
+                            College hours are over for today. Regular timetable will resume on the next scheduled class day.
                             {% endif %}
                         </div>
                         {% endif %}
@@ -246,9 +246,16 @@
                 </div>
 
                 {% if today_lectures %}
-                <div style="display:flex; flex-direction:column; gap:0.65rem;">
+                <div style="display:flex; flex-direction:column; gap:0.65rem;" id="today-schedule-list">
                     {% for lec in today_lectures %}
-                    <div class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}">
+                    <div class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}"
+                         data-start-24="{{ lec['start_24'] }}"
+                         data-end-24="{{ lec['end_24'] }}"
+                         data-subject="{{ lec['subject'] }}"
+                         data-code="{{ lec['subject_code'] }}"
+                         data-room="{{ lec['room'] }}"
+                         data-teacher="{{ lec['teacher_name'] }}"
+                         data-batch="{{ lec['batch'] }}">
                         <div>
                             <div style="display:flex; align-items:center; gap:0.4rem;">
                                 <strong>{{ lec['subject'] }}</strong>
@@ -258,7 +265,7 @@
                                 ⏱ {{ lec['start_time'] }} - {{ lec['end_time'] }} | 🚪 Room: {{ lec['room'] }} | 👨‍🏫 {{ lec['teacher_name'] }}
                             </div>
                         </div>
-                        <div>
+                        <div class="lec-badge-container">
                             {% if current_lecture and current_lecture['id'] == lec['id'] %}
                             <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">NOW</span>
                             {% else %}
@@ -558,6 +565,78 @@
             alertBox.style.border = isSuccess ? '2px solid #2e7d32' : '2px solid #c62828';
             alertBox.innerText = msg;
         }
+
+        // ── Real-Time Dynamic Timetable Synchronization ──
+        function updateRealtimeSchedule() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const current24 = `${hh}:${mm}`;
+
+            const cards = document.querySelectorAll('#today-schedule-list .schedule-card');
+            let activeLec = null;
+            let upcomingLec = null;
+
+            cards.forEach(card => {
+                const start = card.dataset.start24;
+                const end = card.dataset.end24;
+                const badgeContainer = card.querySelector('.lec-badge-container');
+                const defaultBatch = card.dataset.batch || 'All';
+
+                if (start && end && current24 >= start && current24 < end) {
+                    card.classList.add('schedule-active');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = '<span class="badge badge-warning" style="background:#ff5f57; color:#fff;">NOW</span>';
+                    }
+                    activeLec = card;
+                } else {
+                    card.classList.remove('schedule-active');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = `<span class="badge" style="background:#f4f4f5; border:1px solid #000;">${defaultBatch}</span>`;
+                    }
+                    if (start && current24 < start && !upcomingLec) {
+                        upcomingLec = card;
+                    }
+                }
+            });
+
+            const bannerTextContainer = document.getElementById('live-timetable-banner-text');
+            if (bannerTextContainer) {
+                if (activeLec) {
+                    bannerTextContainer.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
+                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">LIVE LECTURE NOW</span>
+                            <strong style="font-size:1.15rem;">${activeLec.dataset.subject} (${activeLec.dataset.code})</strong>
+                        </div>
+                        <div style="font-size:0.85rem; color:#555;">
+                            👨‍🏫 ${activeLec.dataset.teacher} | 🚪 Room: ${activeLec.dataset.room} | ⏱ ${activeLec.dataset.start24} - ${activeLec.dataset.end24}
+                        </div>
+                    `;
+                } else {
+                    let statusMsg = 'College hours are over for today. Regular timetable will resume on the next scheduled class day.';
+                    let badgeMsg = 'College Over';
+                    if (current24 < '10:00') {
+                        badgeMsg = 'Pre-College Hours';
+                        statusMsg = upcomingLec ? `Classes start today at ${upcomingLec.dataset.start24} with ${upcomingLec.dataset.subject}.` : 'Classes have not started yet today.';
+                    } else if (upcomingLec) {
+                        badgeMsg = 'Timetable Standby';
+                        statusMsg = `Next up: <strong>${upcomingLec.dataset.subject}</strong> (${upcomingLec.dataset.teacher}) at ${upcomingLec.dataset.start24}`;
+                    }
+                    bannerTextContainer.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
+                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">${badgeMsg}</span>
+                            <strong style="font-size:1.05rem;">No Active Lecture At This Moment</strong>
+                        </div>
+                        <div style="font-size:0.85rem; color:#666;">
+                            ${statusMsg}
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        updateRealtimeSchedule();
+        setInterval(updateRealtimeSchedule, 30000);
     </script>
 </body>
 

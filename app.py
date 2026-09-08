@@ -17,7 +17,8 @@ from database import (
     get_session_live_attendance, get_student_attendance_history, get_student_stats,
     get_teacher_attendance_records, get_teacher_stats, get_all_attendance_for_export,
     get_notifications_for_role, clear_attendance_history, init_db,
-    finalize_all_expired_sessions, get_latest_session_for_teacher, finalize_attendance_session
+    finalize_all_expired_sessions, get_latest_session_for_teacher, finalize_attendance_session,
+    get_current_time
 )
 
 
@@ -43,7 +44,8 @@ def index():
 
 @app.route('/login')
 def login():
-    return render_template('login.html')
+    role = request.args.get('role', 'student').strip()
+    return render_template('login.html', role=role)
 
 @app.route('/login-post', methods=['POST'])
 def login_post():
@@ -97,7 +99,9 @@ def logout():
 
 @app.route('/register')
 def register():
-    return render_template('register.html')
+    role = request.args.get('role', 'student').strip()
+    active_tab = 'teacher' if role == 'teacher' else 'student'
+    return render_template('register.html', active_tab=active_tab)
 
 @app.route('/register-student-post', methods=['POST'])
 def register_student_post():
@@ -164,7 +168,7 @@ def student_dashboard():
 
     stats = get_student_stats(pid)
     history = get_student_attendance_history(pid)
-    now = datetime.datetime.now()
+    now = get_current_time()
     active_lecture, upcoming_lecture, today_lectures = get_current_active_lecture(now)
     weekly_timetable = get_full_weekly_timetable()
     notifications = get_notifications_for_role('student', pid)
@@ -233,7 +237,7 @@ def teacher_dashboard():
         return redirect(url_for('login'))
 
     teacher_name = teacher['name']
-    now = datetime.datetime.now()
+    now = get_current_time()
     day_name = now.strftime('%A')
     
     # Automatically finalize expired sessions across the system
@@ -526,7 +530,7 @@ def export_attendance_excel():
     ws.row_dimensions[1].height = 28
 
     ws.merge_cells('A2:M2')
-    export_sub = f"Official Attendance Report | Class: Fourth Year B.E. ECS (Div {division}) | Subject: {subject} | Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    export_sub = f"Official Attendance Report | Class: Fourth Year B.E. ECS (Div {division}) | Subject: {subject} | Generated: {get_current_time().strftime('%Y-%m-%d %H:%M:%S')}"
     ws['A2'] = export_sub
     ws['A2'].font = subtitle_font
     ws['A2'].alignment = Alignment(horizontal="center", vertical="center")
@@ -593,7 +597,7 @@ def export_attendance_excel():
     wb.save(buffer)
     buffer.seek(0)
 
-    filename = f"ECS_Attendance_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"ECS_Attendance_Report_{get_current_time().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return send_file(
         buffer,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

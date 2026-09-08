@@ -183,9 +183,13 @@
                 </div>
 
                 {% if today_schedule %}
-                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <div style="display:flex; flex-direction:column; gap:0.75rem;" id="teacher-today-schedule-list">
                     {% for lec in today_schedule %}
-                    <div class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}">
+                    <div class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}"
+                         data-start-24="{{ lec['start_24'] }}"
+                         data-end-24="{{ lec['end_24'] }}"
+                         data-subject="{{ lec['subject'] }}"
+                         data-code="{{ lec['subject_code'] }}">
                         <div>
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <span style="font-weight:800; font-size:1.05rem;">{{ lec['subject'] }}</span>
@@ -195,9 +199,16 @@
                                 ⏰ {{ lec['start_time'] }} – {{ lec['end_time'] }} | 🚪 Room: {{ lec['room'] }} | Batch: {{ lec['batch'] }}
                             </div>
                         </div>
-                        <button type="button" data-subject="{{ lec['subject'] }}" data-code="{{ lec['subject_code'] }}" onclick="startSpecificSession(this.dataset.subject, this.dataset.code)" class="btn btn-sm" style="background:var(--yellow); font-size:0.8rem;">
-                            Start QR ⚡
-                        </button>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <span class="teacher-now-badge-container">
+                                {% if current_lecture and current_lecture['id'] == lec['id'] %}
+                                <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">NOW</span>
+                                {% endif %}
+                            </span>
+                            <button type="button" data-subject="{{ lec['subject'] }}" data-code="{{ lec['subject_code'] }}" onclick="startSpecificSession(this.dataset.subject, this.dataset.code)" class="btn btn-sm" style="background:var(--yellow); font-size:0.8rem;">
+                                Start QR ⚡
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -723,6 +734,35 @@
         if (currentActiveToken) {
             startLivePolling();
         }
+
+        // ── Real-Time Dynamic Timetable Synchronization for Teachers ──
+        function updateRealtimeTeacherSchedule() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const current24 = `${hh}:${mm}`;
+
+            const cards = document.querySelectorAll('#teacher-today-schedule-list .schedule-card');
+            cards.forEach(card => {
+                const start = card.dataset.start24;
+                const end = card.dataset.end24;
+                const badgeContainer = card.querySelector('.teacher-now-badge-container');
+
+                if (start && end && current24 >= start && current24 < end) {
+                    card.classList.add('schedule-active');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = '<span class="badge badge-warning" style="background:#ff5f57; color:#fff;">NOW</span>';
+                    }
+                } else {
+                    card.classList.remove('schedule-active');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = '';
+                    }
+                }
+            });
+        }
+        updateRealtimeTeacherSchedule();
+        setInterval(updateRealtimeTeacherSchedule, 30000);
     </script>
 </body>
 </html>

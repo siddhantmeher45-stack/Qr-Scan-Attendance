@@ -6,6 +6,90 @@
     <title>AttendQR | Portal Registration</title>
     <meta name="description" content="Register Student or Faculty for QR-Code Attendance Management System.">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .register-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1.25rem 3.5rem 1.25rem;
+        }
+        .register-card {
+            max-width: 560px;
+            width: 100%;
+            background: #ffffff;
+            border: 3px solid #000000;
+            border-radius: 14px;
+            padding: 2.25rem 2rem;
+            box-shadow: var(--shadow-lg, 6px 6px 0px #000000);
+            box-sizing: border-box;
+        }
+        .tab-switcher {
+            display: flex;
+            background: var(--gray-light, #f4f4f5);
+            border: 2px solid #000000;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 6px;
+            margin-bottom: 1.75rem;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 0.7rem 0.85rem;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #555;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .tab-button.active {
+            background: var(--yellow, #ffe17c);
+            color: #000;
+            border-color: #000;
+            box-shadow: 2px 2px 0 #000;
+        }
+        .tab-button#tab-btn-teacher.active {
+            background: var(--sage, #b7c6c2);
+        }
+        .reg-input {
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border: 2px solid #000000;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 500;
+            box-sizing: border-box;
+            background: #ffffff;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .reg-input:focus {
+            outline: none;
+            background: #fffde7;
+            box-shadow: 2.5px 2.5px 0 #000;
+        }
+        @media (max-width: 640px) {
+            .register-container {
+                padding: 1.5rem 1rem 2.5rem 1rem;
+            }
+            .register-card {
+                padding: 1.5rem 1.25rem;
+            }
+            .tab-button {
+                font-size: 0.82rem;
+                padding: 0.6rem 0.4rem;
+            }
+        }
+    </style>
 </head>
 <body class="dot-bg" style="min-height:100vh; display:flex; flex-direction:column;">
 
@@ -27,172 +111,166 @@
         <div class="nb-nav-right">
             <a href="/login" class="btn btn-sm" style="white-space:nowrap;"><span class="hide-mobile">Already Registered? </span>Sign In →</a>
         </div>
-
     </nav>
 
-    <div class="page-wrap auth-page" style="flex:1; display:flex; align-items:center; justify-content:center; padding:2rem 1rem 3rem 1rem;">
-        <div class="login-card" style="max-width:560px; width:100%;">
+    <div class="register-container">
+        <div class="register-card">
 
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                <div>
-                    <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Account Registration</span>
-                    <h2 style="margin:0; font-size:1.75rem;">Create Account</h2>
-                </div>
-                <div style="font-size:2rem;">📝</div>
+            <!-- Card Header -->
+            <div style="margin-bottom:1.5rem;">
+                <h1 style="margin:0 0 0.4rem 0; font-size:1.75rem; font-weight:800; letter-spacing:-0.02em;">Create Account</h1>
+                <p style="margin:0; color:#666; font-size:0.9rem;">Register as a student or teacher for QR attendance</p>
             </div>
-            
-            <p class="subtitle" style="margin-bottom:1.25rem;">Register as a student or faculty member for QR attendance</p>
 
             {% if error %}
-            <div style="background:#ffebee; border:2px solid #c62828; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.2rem; font-size:0.85rem; color:#b71c1c; font-weight:700;">
+            <div style="background:#ffebee; border:2px solid #c62828; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:0.85rem; color:#b71c1c; font-weight:700;">
                 ⚠️ {{ error }}
             </div>
             {% endif %}
 
             {% if success %}
-            <div style="background:#e8f5e9; border:2px solid #2e7d32; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.2rem; font-size:0.85rem; color:#1b5e20; font-weight:700;">
+            <div style="background:#e8f5e9; border:2px solid #2e7d32; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:0.85rem; color:#1b5e20; font-weight:700;">
                 ✅ {{ success }} <a href="/login" style="margin-left:0.5rem; text-decoration:underline;">Proceed to Login →</a>
             </div>
             {% endif %}
 
             <!-- Registration Tab Switcher -->
-            <div class="role-toggle" style="margin-bottom:1.5rem;">
-                <button type="button" class="role-option {% if active_tab != 'teacher' %}active{% endif %}" id="tab-btn-student" onclick="switchTab('student')">
+            <div class="tab-switcher">
+                <button type="button" class="tab-button {% if active_tab != 'teacher' %}active{% endif %}" id="tab-btn-student" onclick="switchTab('student')">
                     <span>🎓</span> Register Student
                 </button>
-                <button type="button" class="role-option {% if active_tab == 'teacher' %}active{% endif %}" id="tab-btn-teacher" onclick="switchTab('teacher')">
+                <button type="button" class="tab-button {% if active_tab == 'teacher' %}active{% endif %}" id="tab-btn-teacher" onclick="switchTab('teacher')">
                     <span>👨‍🏫</span> Register Teacher
                 </button>
             </div>
 
             <!-- STUDENT REGISTRATION FORM -->
             <form action="/register-student-post" method="POST" id="form-student" class="{% if active_tab == 'teacher' %}d-none{% endif %}">
-                <div style="background:var(--yellow); border:1.5px solid #000; border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; font-weight:700; margin-bottom:1.2rem;">
+                <div style="background:var(--yellow, #ffe17c); border:1.5px solid #000; border-radius:8px; padding:0.7rem 0.9rem; font-size:0.82rem; font-weight:600; margin-bottom:1.5rem;">
                     💡 A permanent <strong>Student QR Code</strong> containing your unique PID will be created upon registration.
                 </div>
 
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Full Name *</label>
-                        <input type="text" name="name" placeholder="e.g. Aryan Sharma" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Full Name *</label>
+                        <input type="text" name="name" class="reg-input" placeholder="e.g. Aryan Sharma" required>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Personal ID (PID) * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
-                        <input type="text" name="pid" placeholder="e.g. ECS2026006" required
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Personal ID (PID) * <span style="font-size:0.72rem; color:#666; font-weight:normal;">(Unique)</span></label>
+                        <input type="text" name="pid" class="reg-input" placeholder="e.g. ECS2026006" required
                                style="font-weight:700; text-transform:uppercase;">
                     </div>
                 </div>
 
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Email Address *</label>
-                        <input type="email" name="email" placeholder="student@college.edu" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Email Address *</label>
+                        <input type="email" name="email" class="reg-input" placeholder="student@college.edu" required>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Password *</label>
+                        <input type="password" name="password" class="reg-input" placeholder="••••••••" required>
                     </div>
                 </div>
 
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
-                        <input type="text" name="department" value="ECS" required
-                               style="background:#f4f4f5;">
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Department</label>
+                        <input type="text" name="department" class="reg-input" value="ECS" required style="background:#f4f4f5;">
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Course / Branch</label>
-                        <input type="text" name="course" value="Electronics & Computer Science" required
-                               style="background:#f4f4f5;">
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Course / Branch</label>
+                        <input type="text" name="course" class="reg-input" value="Electronics & Computer Science" required style="background:#f4f4f5;">
                     </div>
                 </div>
 
                 <div class="form-grid-3">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Year</label>
-                        <select name="year" style="padding:0.65rem 0.5rem;">
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Year</label>
+                        <select name="year" class="reg-input" style="padding:0.75rem 0.6rem;">
                             <option value="Fourth Year" selected>Fourth Year</option>
                             <option value="Third Year">Third Year</option>
                             <option value="Second Year">Second Year</option>
+                            <option value="First Year">First Year</option>
                         </select>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Division</label>
-                        <input type="text" name="division" value="A" required maxlength="2"
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Division</label>
+                        <input type="text" name="division" class="reg-input" value="A" required maxlength="2"
                                style="text-transform:uppercase; text-align:center; font-weight:700;">
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Roll No. *</label>
-                        <input type="text" name="roll_number" placeholder="e.g. 406" required
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Roll No. *</label>
+                        <input type="text" name="roll_number" class="reg-input" placeholder="e.g. 406" required
                                style="font-weight:700; text-align:center;">
                     </div>
                 </div>
 
-                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center;">
+                <button type="submit" class="btn" style="width:100%; padding:0.9rem; font-size:1rem; font-weight:800; justify-content:center; margin-top:0.5rem;">
                     Register Student & Generate QR →
                 </button>
             </form>
 
             <!-- TEACHER REGISTRATION FORM -->
             <form action="/register-teacher-post" method="POST" id="form-teacher" class="{% if active_tab != 'teacher' %}d-none{% endif %}">
-                <div style="background:var(--sage); border:1.5px solid #000; border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; font-weight:700; margin-bottom:1.2rem;">
-                    👨‍🏫 Faculty accounts have rights to initiate temporary lecture attendance QR sessions and export class reports.
+                <div style="background:var(--sage, #b7c6c2); border:1.5px solid #000; border-radius:8px; padding:0.7rem 0.9rem; font-size:0.82rem; font-weight:600; margin-bottom:1.5rem;">
+                    👨‍🏫 Faculty accounts can initiate QR attendance sessions, manage records, and export reports.
                 </div>
 
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Faculty Full Name *</label>
-                        <input type="text" name="name" placeholder="e.g. Dr. Rajesh Kumar" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Faculty Full Name *</label>
+                        <input type="text" name="name" class="reg-input" placeholder="e.g. Dr. Rajesh Kumar" required>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Teacher ID * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
-                        <input type="text" name="teacher_id" placeholder="e.g. T_RK" required
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Teacher ID * <span style="font-size:0.72rem; color:#666; font-weight:normal;">(Unique)</span></label>
+                        <input type="text" name="teacher_id" class="reg-input" placeholder="e.g. T_RK" required
                                style="font-weight:700; text-transform:uppercase;">
                     </div>
                 </div>
 
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">College Email *</label>
-                        <input type="email" name="email" placeholder="faculty@college.edu" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">College Email *</label>
+                        <input type="email" name="email" class="reg-input" placeholder="faculty@college.edu" required>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Password *</label>
+                        <input type="password" name="password" class="reg-input" placeholder="••••••••" required>
                     </div>
                 </div>
 
                 <div class="form-grid-1-2">
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
-                        <input type="text" name="department" value="ECS" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Department</label>
+                        <input type="text" name="department" class="reg-input" value="ECS" required>
                     </div>
                     <div class="input-group">
-                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Subjects Assigned *</label>
-                        <input type="text" name="subjects" placeholder="e.g. PLCA, DL, Embedded Systems" required>
+                        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.85rem;">Subjects Assigned *</label>
+                        <input type="text" name="subjects" class="reg-input" placeholder="e.g. PLCA, DL, Embedded Systems" required>
                     </div>
                 </div>
 
-                <div class="input-group" style="margin-bottom:1.25rem; background:#fffde7; border:2px solid #000; border-radius:8px; padding:0.75rem 0.85rem; box-shadow:2.5px 2.5px 0 #000;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                <div class="input-group" style="margin-bottom:1.5rem; background:#fffde7; border:2px solid #000; border-radius:8px; padding:0.85rem 1rem; box-shadow:2.5px 2.5px 0 #000;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
                         <label style="display:block; font-weight:800; font-size:0.85rem; color:#000; margin-bottom:0;">
-                            🔑 Faculty Secret Authorization Code *
+                            🔑 Faculty Authorization Code *
                         </label>
-                        <span style="font-size:0.68rem; background:#000; color:#ffe17c; padding:0.1rem 0.4rem; border-radius:3px; font-weight:700;">VERIFIED FACULTY</span>
+                        <span style="font-size:0.68rem; background:#000; color:#ffe17c; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">OFFICIAL CODE</span>
                     </div>
-                    <input type="password" name="secret_code" placeholder="Enter 6-digit Secret Code" required
-                           style="width:100%; letter-spacing:0.12em; font-weight:700; font-size:0.92rem; background:#fff;">
-                    <div style="font-size:0.72rem; color:#555; margin-top:0.3rem;">
-                        Security Notice: Only college faculty members with the official secret authorization code can register.
+                    <input type="password" name="secret_code" class="reg-input" placeholder="Enter Faculty Secret Code (e.g. 031926)" required
+                           style="letter-spacing:0.12em; font-weight:700; font-size:0.92rem; background:#fff;">
+                    <div style="font-size:0.75rem; color:#555; margin-top:0.4rem;">
+                        Security Notice: Code is authorized by administration (Default: <code>031926</code>).
                     </div>
                 </div>
 
-                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center; background:var(--sage);">
+                <button type="submit" class="btn" style="width:100%; padding:0.9rem; font-size:1rem; font-weight:800; justify-content:center; background:var(--sage, #b7c6c2); margin-top:0.5rem;">
                     Register Faculty Account →
                 </button>
             </form>
 
-            <div style="margin-top:1.25rem; font-size:0.82rem; color:#555; text-align:center;">
+            <div style="margin-top:1.75rem; font-size:0.88rem; color:#666; text-align:center;">
                 Already have an account? <a href="/login" style="color:#000; font-weight:700; text-decoration:underline;">Sign in to your portal</a>
             </div>
 
@@ -209,13 +287,13 @@
             if (tab === 'teacher') {
                 btnStudent.classList.remove('active');
                 btnTeacher.classList.add('active');
-                formStudent.style.display = 'none';
-                formTeacher.style.display = 'block';
+                formStudent.classList.add('d-none');
+                formTeacher.classList.remove('d-none');
             } else {
                 btnTeacher.classList.remove('active');
                 btnStudent.classList.add('active');
-                formTeacher.style.display = 'none';
-                formStudent.style.display = 'block';
+                formTeacher.classList.add('d-none');
+                formStudent.classList.remove('d-none');
             }
         }
 
@@ -227,4 +305,3 @@
     </script>
 </body>
 </html>
-

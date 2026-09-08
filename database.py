@@ -1,8 +1,22 @@
+import os
 import sqlite3
 import datetime
 import uuid
 
 DB_NAME = 'attendance.db'
+
+def get_current_time():
+    """
+    Returns current datetime in Indian Standard Time (IST, UTC+5:30) as a naive datetime,
+    ensuring accurate college local time on cloud hosting (Railway, AWS, etc.) without comparison errors.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo(os.getenv('COLLEGE_TIMEZONE', 'Asia/Kolkata'))
+        return datetime.datetime.now(tz).replace(tzinfo=None)
+    except Exception:
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        return datetime.datetime.now(ist).replace(tzinfo=None)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -156,7 +170,7 @@ def get_current_active_lecture(now=None):
     Also returns next upcoming lecture.
     """
     if now is None:
-        now = datetime.datetime.now()
+        now = get_current_time()
     
     current_day = now.strftime('%A')
     current_time_str = now.strftime('%H:%M')
@@ -184,7 +198,7 @@ def get_current_active_lecture(now=None):
 # ----------------- ATTENDANCE SESSION MANAGEMENT -----------------
 
 def create_attendance_session(teacher_id, teacher_name, subject, subject_code, class_name, division, start_time=None, end_time=None, duration_minutes=15):
-    now = datetime.datetime.now()
+    now = get_current_time()
     date_str = now.strftime('%Y-%m-%d')
     start_time_str = start_time or now.strftime('%I:%M %p')
     
@@ -269,7 +283,7 @@ def finalize_attendance_session(session_id_or_token, conn=None):
     try:
         day_name = datetime.datetime.strptime(session_date, '%Y-%m-%d').strftime('%A')
     except Exception:
-        day_name = datetime.datetime.now().strftime('%A')
+        day_name = get_current_time().strftime('%A')
 
     # 1. Update session status to closed
     cursor.execute("UPDATE attendance_sessions SET status = 'closed' WHERE id = ?", (session_id,))
@@ -314,7 +328,7 @@ def finalize_all_expired_sessions():
     and automatically marks unscanned students as Absent.
     """
     conn = get_db_connection()
-    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_str = get_current_time().strftime('%Y-%m-%d %H:%M:%S')
     cursor = conn.cursor()
     expired = cursor.execute(
         "SELECT id FROM attendance_sessions WHERE status = 'active' AND expires_at <= ?",
@@ -343,7 +357,7 @@ def get_active_session_for_teacher(teacher_id):
     conn.close()
     if session_row:
         # Check if expired
-        now = datetime.datetime.now()
+        now = get_current_time()
         expires_at = datetime.datetime.strptime(session_row['expires_at'], '%Y-%m-%d %H:%M:%S')
         if now > expires_at:
             finalize_attendance_session(session_row['id'])
@@ -384,7 +398,7 @@ def mark_qr_attendance(session_token, student_pid):
         conn.close()
         return False, f"Attendance session is {session_row['status']}. Attendance is closed."
 
-    now = datetime.datetime.now()
+    now = get_current_time()
     expires_at = datetime.datetime.strptime(session_row['expires_at'], '%Y-%m-%d %H:%M:%S')
     if now > expires_at:
         cursor.execute("UPDATE attendance_sessions SET status = 'expired' WHERE id = ?", (session_row['id'],))
