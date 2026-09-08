@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendQR | Faculty Dashboard</title>
+    <meta name="description" content="Faculty Attendance Management and Live QR Session Portal for Fourth Year B.E. ECS.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dot-bg">
+
+    <!-- ── Top Navbar ── -->
+    <nav class="nb-nav">
+        <a class="nb-nav-logo" href="/teacher-dashboard">
+            <div class="nb-nav-logo-icon" style="background:var(--yellow); border:2px solid #000; border-radius:8px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px; height:20px;">
+                    <rect x="3" y="3" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="14" y="14" width="3" height="3" fill="#171e19"/>
+                    <rect x="18" y="18" width="3" height="3" fill="#171e19"/>
+                    <rect x="14" y="18" width="3" height="3" fill="#171e19"/>
+                </svg>
+            </div>
+            <span>Attend<span style="background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; margin-left:2px;">QR</span></span>
+            <span class="badge badge-primary" style="margin-left:0.5rem; font-size:0.75rem;">Faculty Hub</span>
+        </a>
+        <div class="nb-nav-right" style="display:flex; align-items:center; gap:0.75rem;">
+            <button onclick="openStartSessionModal()" class="btn btn-sm btn-primary" style="font-weight:800; border:2px solid #000; box-shadow:3px 3px 0 #000;">
+                ⚡ Start Attendance Session
+            </button>
+            <button onclick="openExportModal()" class="btn btn-sm btn-sage">
+                📊 Export Excel (.xlsx)
+            </button>
+            <a href="/logout" class="btn btn-sm btn-danger">
+                Logout ↪
+            </a>
+        </div>
+    </nav>
+
+    <!-- ── Main Dashboard Container ── -->
+    <div class="container" style="padding-top:1.5rem; padding-bottom:3rem;">
+
+        <!-- Notifications Bar -->
+        {% if notifications %}
+        <div style="margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+            {% for n in notifications %}
+            <div style="background:#fff; border:2px solid #000; border-left:6px solid #b7c6c2; padding:0.6rem 1rem; border-radius:6px; box-shadow:3px 3px 0 #000; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>🔔 {{ n['title'] }}:</strong> <span style="font-size:0.9rem; color:#333;">{{ n['message'] }}</span>
+                </div>
+                <span style="font-size:0.72rem; color:#777;">{{ n['created_at'].split(' ')[0] }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Faculty Profile & Metrics Grid -->
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.25rem; margin-bottom:1.5rem;">
+            
+            <!-- Faculty Profile Card -->
+            <div class="nb-card">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                        <div style="width:72px; height:72px; background:var(--sage); border:2.5px solid #000; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; box-shadow:3px 3px 0 #000;">
+                            👨‍🏫
+                        </div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                                <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ teacher['name'] }}</h1>
+                                <span class="badge badge-success">Faculty Incharge</span>
+                            </div>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
+                                <span><strong>Teacher ID:</strong> <code style="background:#b7c6c2; padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px; font-weight:800;">{{ teacher['teacher_id'] }}</code></span>
+                                <span>•</span>
+                                <span><strong>Email:</strong> {{ teacher['email'] }}</span>
+                                <span>•</span>
+                                <span><strong>Dept:</strong> {{ teacher['department'] }}</span>
+                            </div>
+                            <div style="font-size:0.82rem; color:#222; margin-top:0.4rem;">
+                                📚 <strong>Assigned Subjects:</strong> <span style="background:var(--yellow); padding:0.15rem 0.5rem; border-radius:4px; font-weight:700; border:1px solid #000;">{{ teacher['subjects'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS (Div A)</span>
+                    </div>
+                </div>
+
+                <div style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                    <div>
+                        <strong>Today:</strong> {{ today_date }}
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button onclick="openStartSessionModal()" class="btn btn-sm" style="background:var(--yellow);">
+                            ⚡ New Attendance Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faculty Metrics Card -->
+            <div class="nb-card" style="background:var(--charcoal); color:#fff; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <span style="font-size:0.85rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--yellow);">Department Attendance Metric</span>
+                    <div style="display:flex; align-items:baseline; gap:0.6rem; margin-top:0.5rem;">
+                        <span style="font-size:3rem; font-weight:800; line-height:1; color:#fff;">{{ stats['average_attendance'] }}%</span>
+                        <span style="color:#aaa; font-size:0.85rem;">Average</span>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.82rem; border-top:1px solid #333; padding-top:0.8rem;">
+                    <div>Sessions Held: <strong style="color:var(--yellow);">{{ stats['total_sessions'] }}</strong></div>
+                    <div style="text-align:right;">Total Marked: <strong style="color:#10b981;">{{ stats['total_present'] }}</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── Active Session Banner (if running) ── -->
+        <div id="active-session-banner" class="nb-card-yellow {% if not active_session %}d-none{% endif %}" style="margin-bottom:2rem; padding:1.5rem; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="width:60px; height:60px; background:#000; color:var(--yellow); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:2rem; border:2px solid #000;">
+                        📡
+                    </div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <span class="badge badge-danger" style="animation:pulse 1.5s infinite;">● LIVE SESSION ACTIVE</span>
+                            <span style="font-size:1.25rem; font-weight:800;" id="active-session-subject">{{ active_session['subject'] if active_session else '' }}</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#222; margin-top:0.25rem;">
+                            Token: <code id="active-session-token" style="background:#fff; padding:0.15rem 0.5rem; border:1px solid #000; border-radius:4px; font-weight:800;">{{ active_session['session_token'] if active_session else '' }}</code>
+                            | Class: <strong>Fourth Year B.E. ECS (Div A)</strong>
+                            | Expires at: <span id="active-session-expiry">{{ active_session['expires_at'].split(' ')[1] if active_session else '' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:0.6rem;">
+                    <button onclick="viewLiveQr()" class="btn" style="background:#000; color:#fff;">
+                        🖥 Project Attendance QR
+                    </button>
+                    <button onclick="stopAttendanceSession()" class="btn" style="background:#ef4444; color:#fff;">
+                        ⏹ End Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Real-time Quick Counters -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem; margin-top:1.25rem; border-top:2px dashed #000; padding-top:1rem;">
+                <div style="background:#fff; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#666;">Enrolled Students</div>
+                    <div style="font-size:1.5rem; font-weight:800;" id="quick-total">{{ students|length }}</div>
+                </div>
+                <div style="background:#e8f5e9; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#2e7d32;">Present (Scanned)</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#2e7d32;" id="quick-present">0</div>
+                </div>
+                <div style="background:#ffebee; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#c62828;">Absent Count</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#c62828;" id="quick-absent">{{ students|length }}</div>
+                </div>
+                <div style="background:#fff; border:2px solid #000; border-radius:8px; padding:0.75rem; text-align:center;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#666;">Live Turnout %</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#000;" id="quick-pct">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Schedule & Live Timetable Section ── -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.5rem;">
+            
+            <!-- Today's Schedule for Teacher -->
+            <div class="nb-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h2 style="margin:0; font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:0.4rem;">
+                        <span>📅</span> Today's Teaching Schedule
+                    </h2>
+                    <span class="badge badge-warning">{{ today_date.split(',')[0] }}</span>
+                </div>
+
+                {% if today_schedule %}
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    {% for lec in today_schedule %}
+                    <div class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span style="font-weight:800; font-size:1.05rem;">{{ lec['subject'] }}</span>
+                                <span style="font-size:0.75rem; background:#000; color:#ffe17c; padding:0.1rem 0.4rem; border-radius:4px; font-weight:700;">{{ lec['subject_code'] }}</span>
+                            </div>
+                            <div style="font-size:0.8rem; color:#555; margin-top:0.25rem;">
+                                ⏰ {{ lec['start_time'] }} – {{ lec['end_time'] }} | 🚪 Room: {{ lec['room'] }} | Batch: {{ lec['batch'] }}
+                            </div>
+                        </div>
+                        <button type="button" data-subject="{{ lec['subject'] }}" data-code="{{ lec['subject_code'] }}" onclick="startSpecificSession(this.dataset.subject, this.dataset.code)" class="btn btn-sm" style="background:var(--yellow); font-size:0.8rem;">
+                            Start QR ⚡
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="padding:1.5rem; text-align:center; color:#666; background:#f9f9fa; border:2px dashed #ccc; border-radius:8px;">
+                    No lectures scheduled for you today on the regular timetable.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Complete Assigned Lectures Overview -->
+            <div class="nb-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h2 style="margin:0; font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:0.4rem;">
+                        <span>📚</span> Weekly Assigned Lectures
+                    </h2>
+                    <span class="badge" style="background:#f4f4f5; border:1px solid #000;">Fourth Year ECS</span>
+                </div>
+
+                {% if all_schedule %}
+                <div class="table-wrap" style="max-height:220px; overflow-y:auto;">
+                    <table class="nb-table" style="font-size:0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Subject</th>
+                                <th>Room</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in all_schedule %}
+                            <tr>
+                                <td><strong>{{ s['day'] }}</strong></td>
+                                <td>{{ s['start_time'] }} - {{ s['end_time'] }}</td>
+                                <td>{{ s['subject'] }}</td>
+                                <td>{{ s['room'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="padding:1.5rem; text-align:center; color:#666;">
+                    No weekly timetable records found.
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- ── Live Student Attendance Feed & Roster ── -->
+        <div class="nb-card" style="margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                    <h2 style="margin:0; font-size:1.35rem; font-weight:800; display:flex; align-items:center; gap:0.5rem;">
+                        <span>👥</span> Class Roster & Real-Time Attendance Stream
+                    </h2>
+                    <p style="margin:0.25rem 0 0 0; font-size:0.8rem; color:#555;">Live list of students for Fourth Year B.E. ECS (Division A) with anti-proxy validation</p>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    <span class="badge" style="background:#e8f5e9; color:#1b5e20; border:1.5px solid #000; font-weight:700;">🟢 Live Auto-Polling Enabled</span>
+                </div>
+            </div>
+
+            {% if students %}
+            <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+                <table class="nb-table" id="roster-table">
+                    <thead>
+                        <tr>
+                            <th>Roll No.</th>
+                            <th>PID</th>
+                            <th>Student Name</th>
+                            <th>Department / Year</th>
+                            <th>Division</th>
+                            <th>Scan Timestamp</th>
+                            <th>Live Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roster-tbody">
+                        {% for s in students %}
+                        <tr id="row-{{ s['pid'] }}">
+                            <td><strong>{{ s['roll_number'] }}</strong></td>
+                            <td><code>{{ s['pid'] }}</code></td>
+                            <td><span style="font-weight:700;">{{ s['name'] }}</span></td>
+                            <td>{{ s['department'] }} - {{ s['year'] }}</td>
+                            <td><span class="badge" style="background:#f4f4f5; border:1px solid #000;">{{ s['division'] }}</span></td>
+                            <td class="scan-time">-</td>
+                            <td><span class="badge badge-danger status-badge">Absent</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding:2rem 1.5rem; text-align:center; color:#555; background:#fafafa; border:2px dashed #000; border-radius:8px;">
+                <div style="font-size:2rem; margin-bottom:0.35rem;">👥</div>
+                <strong style="font-size:1.05rem; color:#000; display:block; margin-bottom:0.25rem;">No Students Enrolled Yet</strong>
+                <p style="margin:0 0 0.85rem 0; font-size:0.85rem; color:#666;">New students can register to appear on this live roster and scan attendance QR codes.</p>
+                <a href="/register?role=student" class="btn btn-sm" style="background:var(--yellow); font-weight:800;">
+                    Register New Student 🎓
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── Recent Attendance History & Export Section ── -->
+        <div class="nb-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                    <h2 style="margin:0; font-size:1.35rem; font-weight:800; display:flex; align-items:center; gap:0.5rem;">
+                        <span>📊</span> Recent Attendance Records
+                    </h2>
+                    <p style="margin:0.25rem 0 0 0; font-size:0.8rem; color:#555;">Complete verified historical attendance logs for your assigned subjects</p>
+                </div>
+                <div style="display:flex; gap:0.6rem;">
+                    <button onclick="clearAttendanceHistory()" class="btn btn-sm btn-danger" style="box-shadow:2.5px 2.5px 0 #000;">
+                        🗑 Clear History
+                    </button>
+                    <button onclick="openExportModal()" class="btn btn-sm" style="background:var(--sage);">
+                        ⬇ Export Official Excel (.xlsx)
+                    </button>
+                </div>
+            </div>
+
+            {% if recent_records %}
+            <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+                <table class="nb-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Lecture Time</th>
+                            <th>Subject</th>
+                            <th>PID</th>
+                            <th>Student Name</th>
+                            <th>Roll</th>
+                            <th>Marked Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recent_records[:30] %}
+                        <tr>
+                            <td><strong>{{ r['date'] }}</strong></td>
+                            <td>{{ r['lecture_time'] }}</td>
+                            <td><span style="font-weight:700;">{{ r['subject'] }}</span></td>
+                            <td><code>{{ r['pid'] }}</code></td>
+                            <td>{{ r['student_name'] }}</td>
+                            <td>{{ r['roll_number'] }}</td>
+                            <td><code style="font-size:0.78rem;">{{ r['timestamp'].split(' ')[1] }}</code></td>
+                            <td><span class="badge badge-success">✓ {{ r['status'] }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding:2.5rem 1.5rem; text-align:center; color:#555; background:#fafafa; border:2px dashed #000; border-radius:8px;">
+                <div style="font-size:2rem; margin-bottom:0.4rem;">📋</div>
+                <strong style="font-size:1.05rem; color:#000; display:block; margin-bottom:0.25rem;">No Attendance Records Yet</strong>
+                <p style="margin:0 0 1rem 0; font-size:0.85rem; color:#666;">Start an attendance session from your schedule above to generate a QR code and begin tracking live student attendance.</p>
+                <button onclick="openStartSessionModal()" class="btn btn-sm" style="background:var(--yellow); font-weight:800;">
+                    ⚡ Start Attendance Session
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 1: START ATTENDANCE SESSION -->
+    <!-- ======================================================== -->
+    <div id="modal-start-session" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div class="nb-card" style="max-width:500px; width:92%; position:relative; padding:2rem;">
+            <button onclick="closeStartSessionModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+
+            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Attendance Setup</span>
+            <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Initiate Attendance QR Session</h2>
+            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Create a temporary secure QR code for students to scan during lecture.</p>
+
+            <form id="start-session-form" onsubmit="submitStartSession(event)">
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Select Subject *</label>
+                    <select id="session-subject-select" style="width:100%; padding:0.7rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700;">
+                        {% for sub in teacher['subjects'].split(',') %}
+                        {% set s = sub.strip() %}
+                        <option value="{{ s }}" {% if current_lecture and current_lecture['subject'] == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:1rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Class & Branch</label>
+                        <input type="text" id="session-class" value="Fourth Year B.E. ECS" readonly
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; background:#f4f4f5; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Division</label>
+                        <input type="text" id="session-division" value="A" readonly
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; background:#f4f4f5; font-family:inherit; text-align:center; font-weight:700;">
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-bottom:1.5rem;">
+                    <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">QR Session Expiry Duration</label>
+                    <select id="session-duration" style="width:100%; padding:0.7rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <option value="5">5 Minutes (Strict Quick Attendance)</option>
+                        <option value="10">10 Minutes</option>
+                        <option value="15" selected>15 Minutes (Recommended)</option>
+                        <option value="30">30 Minutes (Full Lecture Window)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center; background:var(--yellow);">
+                    Generate Attendance QR & Start ⚡
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2: PROJECT LIVE ATTENDANCE QR (CLASSROOM VIEW) -->
+    <!-- ======================================================== -->
+    <div id="modal-project-qr" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
+        <div class="nb-card" style="max-width:540px; width:92%; text-align:center; position:relative; padding:2rem 1.5rem; background:#fff;">
+            <button onclick="closeProjectQrModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:34px; height:34px; font-weight:800; cursor:pointer;">✕</button>
+
+            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Projector Mode</span>
+            <h2 id="projector-subject-title" style="margin:0 0 0.25rem 0; font-size:1.6rem; font-weight:800;">Lecture Attendance QR</h2>
+            <div style="font-size:0.85rem; color:#444; margin-bottom:1rem;">
+                Scan with AttendQR Student Account • Class: <strong>Fourth Year ECS (Div A)</strong>
+            </div>
+
+            <!-- Dynamic Session QR Code Container -->
+            <div style="margin:0 auto 1.25rem auto; width:260px; height:260px; padding:12px; background:var(--yellow); border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000;">
+                <img id="projector-qr-img" src="" alt="Live Attendance QR" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
+            </div>
+
+            <div style="display:flex; justify-content:center; align-items:center; gap:1.5rem; margin-bottom:1.25rem;">
+                <div style="font-size:0.85rem;">
+                    Session Token: <code id="projector-token-code" style="background:#f4f4f5; padding:0.2rem 0.6rem; border:1.5px solid #000; border-radius:4px; font-weight:800;">-</code>
+                </div>
+            </div>
+
+            <!-- Live Attendance Tally inside projector -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6rem; background:#f9f9fa; border:2px solid #000; border-radius:8px; padding:0.75rem; margin-bottom:1.25rem;">
+                <div>
+                    <div style="font-size:0.72rem; color:#666; font-weight:700;">Present</div>
+                    <div style="font-size:1.3rem; font-weight:800; color:#10b981;" id="modal-live-present">0</div>
+                </div>
+                <div>
+                    <div style="font-size:0.72rem; color:#666; font-weight:700;">Absent</div>
+                    <div style="font-size:1.3rem; font-weight:800; color:#ef4444;" id="modal-live-absent">0</div>
+                </div>
+                <div>
+                    <div style="font-size:0.72rem; color:#666; font-weight:700;">Turnout</div>
+                    <div style="font-size:1.3rem; font-weight:800; color:#000;" id="modal-live-pct">0%</div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:0.6rem; justify-content:center;">
+                <button onclick="closeProjectQrModal()" class="btn btn-sm" style="background:#000; color:#fff;">
+                    Done / Keep Live in Background
+                </button>
+                <button onclick="stopAttendanceSession()" class="btn btn-sm" style="background:#ef4444; color:#fff;">
+                    End Session
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 3: EXPORT ATTENDANCE TO EXCEL (.XLSX) -->
+    <!-- ======================================================== -->
+    <div id="modal-export" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div class="nb-card" style="max-width:480px; width:92%; position:relative; padding:2rem;">
+            <button onclick="closeExportModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+
+            <span class="badge badge-success" style="margin-bottom:0.4rem; display:inline-block;">Excel Export (.XLSX)</span>
+            <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Export Attendance Report</h2>
+            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Generate a formatted Microsoft Excel spreadsheet containing all student PIDs, timestamps, and lecture details.</p>
+
+            <form action="/export-attendance-excel" method="GET">
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Filter by Subject</label>
+                    <select name="subject" style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <option value="All" selected>All Subjects</option>
+                        <option value="PLCA">PLCA (Programmable Logic Controllers)</option>
+                        <option value="DL">DL (Deep Learning)</option>
+                        <option value="ND">ND (Network Design)</option>
+                        <option value="DICD">DICD (Digital IC Design)</option>
+                        <option value="BCD">BCD (Blockchain & Distributed Ledger)</option>
+                    </select>
+                </div>
+
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Filter by Specific Date (Optional)</label>
+                    <input type="date" name="date" style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                </div>
+
+                <div class="input-group" style="margin-bottom:1.5rem;">
+                    <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Class & Division</label>
+                    <select name="division" style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <option value="A" selected>Fourth Year ECS — Division A</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center; background:var(--sage);">
+                    Download Excel Spreadsheet (.xlsx) 📥
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        let currentActiveToken = "{{ active_session['session_token'] if active_session else '' }}";
+        let livePollInterval = null;
+
+        function openStartSessionModal() {
+            document.getElementById('modal-start-session').style.display = 'flex';
+        }
+
+        function closeStartSessionModal() {
+            document.getElementById('modal-start-session').style.display = 'none';
+        }
+
+        function startSpecificSession(subject, code) {
+            const select = document.getElementById('session-subject-select');
+            select.value = subject;
+            openStartSessionModal();
+        }
+
+        function openExportModal() {
+            document.getElementById('modal-export').style.display = 'flex';
+        }
+
+        function closeExportModal() {
+            document.getElementById('modal-export').style.display = 'none';
+        }
+
+        function viewLiveQr() {
+            if (!currentActiveToken) return;
+            document.getElementById('projector-qr-img').src = `/session-qr/${currentActiveToken}`;
+            document.getElementById('projector-token-code').innerText = currentActiveToken;
+            document.getElementById('modal-project-qr').style.display = 'flex';
+        }
+
+        function closeProjectQrModal() {
+            document.getElementById('modal-project-qr').style.display = 'none';
+        }
+
+        function submitStartSession(e) {
+            e.preventDefault();
+            const subject = document.getElementById('session-subject-select').value;
+            const duration = document.getElementById('session-duration').value;
+
+            fetch('/teacher/start-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject: subject, duration: duration })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    closeStartSessionModal();
+                    currentActiveToken = data.session.session_token;
+
+                    // Update banner
+                    document.getElementById('active-session-banner').style.display = 'block';
+                    document.getElementById('active-session-subject').innerText = data.session.subject;
+                    document.getElementById('active-session-token').innerText = data.session.session_token;
+                    document.getElementById('active-session-expiry').innerText = data.session.expires_at.split(' ')[1];
+
+                    // Open QR modal automatically
+                    viewLiveQr();
+
+                    // Start live polling
+                    startLivePolling();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to start session.");
+            });
+        }
+
+        function stopAttendanceSession() {
+            if (!confirm("Are you sure you want to end this attendance session? Students will no longer be able to scan.")) return;
+
+            fetch('/teacher/stop-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_token: currentActiveToken })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentActiveToken = "";
+                    document.getElementById('active-session-banner').style.display = 'none';
+                    closeProjectQrModal();
+                    if (livePollInterval) clearInterval(livePollInterval);
+                    alert("Attendance session ended successfully.");
+                    window.location.reload();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            });
+        }
+
+        function clearAttendanceHistory() {
+            if (!confirm("Are you sure you want to completely clear past attendance history? This cannot be undone.")) return;
+
+            fetch('/teacher/clear-history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Attendance history cleared successfully.");
+                    window.location.reload();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to clear attendance history.");
+            });
+        }
+
+        function startLivePolling() {
+            if (livePollInterval) clearInterval(livePollInterval);
+            pollLiveAttendance();
+            livePollInterval = setInterval(pollLiveAttendance, 2500);
+        }
+
+        function pollLiveAttendance() {
+            if (!currentActiveToken) return;
+
+            fetch(`/teacher/live-attendance/${currentActiveToken}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const d = data.data;
+                    document.getElementById('quick-total').innerText = d.total_enrolled;
+                    document.getElementById('quick-present').innerText = d.present_count;
+                    document.getElementById('quick-absent').innerText = d.absent_count;
+                    document.getElementById('quick-pct').innerText = d.attendance_pct + '%';
+
+                    // Update projector modal counters too
+                    document.getElementById('modal-live-present').innerText = d.present_count;
+                    document.getElementById('modal-live-absent').innerText = d.absent_count;
+                    document.getElementById('modal-live-pct').innerText = d.attendance_pct + '%';
+
+                    // Update roster table rows
+                    d.roster.forEach(student => {
+                        const row = document.getElementById(`row-${student.pid}`);
+                        if (row) {
+                            const badge = row.querySelector('.status-badge');
+                            const timeCell = row.querySelector('.scan-time');
+                            if (student.status === 'Present') {
+                                badge.className = 'badge badge-success status-badge';
+                                badge.innerText = '✓ Present';
+                                timeCell.innerHTML = `<code>${student.timestamp.split(' ')[1]}</code>`;
+                                row.style.background = '#e8f5e9';
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(err => console.log("Live polling err:", err));
+        }
+
+        // If session was already active on page load, start polling immediately
+        if (currentActiveToken) {
+            startLivePolling();
+        }
+    </script>
+</body>
+</html>

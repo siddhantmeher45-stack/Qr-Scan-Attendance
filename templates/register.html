@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendQR | Portal Registration</title>
+    <meta name="description" content="Register Student or Faculty for QR-Code Attendance Management System.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dot-bg" style="min-height:100vh; display:flex; flex-direction:column;">
+
+    <!-- ── Navigation ── -->
+    <nav class="nb-nav" style="height:68px;">
+        <a class="nb-nav-logo" href="/">
+            <div class="nb-nav-logo-icon" style="width:38px; height:38px; background:var(--yellow); display:flex; align-items:center; justify-content:center; border:2px solid #000; border-radius:8px;">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:22px; height:22px;">
+                    <rect x="3" y="3" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" fill="#171e19"/>
+                    <rect x="14" y="14" width="3" height="3" fill="#171e19"/>
+                    <rect x="18" y="18" width="3" height="3" fill="#171e19"/>
+                    <rect x="14" y="18" width="3" height="3" fill="#171e19"/>
+                </svg>
+            </div>
+            <span>Attend<span style="background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; margin-left:2px;">QR</span></span>
+        </a>
+        <div class="nb-nav-right">
+            <a href="/login" class="btn btn-sm">Already Registered? Sign In →</a>
+        </div>
+    </nav>
+
+    <div class="page-wrap auth-page" style="flex:1; display:flex; align-items:center; justify-content:center; padding:2.5rem 1rem;">
+        <div class="login-card" style="max-width:560px; width:100%;">
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                <div>
+                    <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Account Registration</span>
+                    <h2 style="margin:0; font-size:1.75rem;">Create Account</h2>
+                </div>
+                <div style="font-size:2rem;">📝</div>
+            </div>
+            
+            <p class="subtitle" style="margin-bottom:1.25rem;">Register as a student or faculty member for QR attendance</p>
+
+            {% if error %}
+            <div style="background:#ffebee; border:2px solid #c62828; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.2rem; font-size:0.85rem; color:#b71c1c; font-weight:700;">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div style="background:#e8f5e9; border:2px solid #2e7d32; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.2rem; font-size:0.85rem; color:#1b5e20; font-weight:700;">
+                ✅ {{ success }} <a href="/login" style="margin-left:0.5rem; text-decoration:underline;">Proceed to Login →</a>
+            </div>
+            {% endif %}
+
+            <!-- Registration Tab Switcher -->
+            <div class="role-toggle" style="margin-bottom:1.5rem;">
+                <button type="button" class="role-option {% if active_tab != 'teacher' %}active{% endif %}" id="tab-btn-student" onclick="switchTab('student')">
+                    <span>🎓</span> Register Student
+                </button>
+                <button type="button" class="role-option {% if active_tab == 'teacher' %}active{% endif %}" id="tab-btn-teacher" onclick="switchTab('teacher')">
+                    <span>👨‍🏫</span> Register Teacher
+                </button>
+            </div>
+
+            <!-- STUDENT REGISTRATION FORM -->
+            <form action="/register-student-post" method="POST" id="form-student" class="{% if active_tab == 'teacher' %}d-none{% endif %}">
+                <div style="background:var(--yellow); border:1.5px solid #000; border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; font-weight:700; margin-bottom:1.2rem;">
+                    💡 A permanent <strong>Student QR Code</strong> containing your unique PID will be created upon registration.
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Full Name *</label>
+                        <input type="text" name="name" placeholder="e.g. Aryan Sharma" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Personal ID (PID) * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
+                        <input type="text" name="pid" placeholder="e.g. ECS2026006" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Email Address *</label>
+                        <input type="email" name="email" placeholder="student@college.edu" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
+                        <input type="password" name="password" placeholder="••••••••" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
+                        <input type="text" name="department" value="ECS" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; background:#f4f4f5;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Course / Branch</label>
+                        <input type="text" name="course" value="Electronics & Computer Science" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; background:#f4f4f5;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:1.4rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Year</label>
+                        <select name="year" style="width:100%; padding:0.65rem 0.5rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                            <option value="Fourth Year" selected>Fourth Year</option>
+                            <option value="Third Year">Third Year</option>
+                            <option value="Second Year">Second Year</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Division</label>
+                        <input type="text" name="division" value="A" required maxlength="2"
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; text-transform:uppercase; text-align:center; font-weight:700;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Roll No. *</label>
+                        <input type="text" name="roll_number" placeholder="e.g. 406" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-align:center;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center;">
+                    Register Student & Generate QR →
+                </button>
+            </form>
+
+            <!-- TEACHER REGISTRATION FORM -->
+            <form action="/register-teacher-post" method="POST" id="form-teacher" class="{% if active_tab != 'teacher' %}d-none{% endif %}">
+                <div style="background:var(--sage); border:1.5px solid #000; border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; font-weight:700; margin-bottom:1.2rem;">
+                    👨‍🏫 Faculty accounts have rights to initiate temporary lecture attendance QR sessions and export class reports.
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Faculty Full Name *</label>
+                        <input type="text" name="name" placeholder="e.g. Dr. Rajesh Kumar" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Teacher ID * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
+                        <input type="text" name="teacher_id" placeholder="e.g. T_RK" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">College Email *</label>
+                        <input type="email" name="email" placeholder="faculty@college.edu" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
+                        <input type="password" name="password" placeholder="••••••••" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 2fr; gap:0.9rem; margin-bottom:1.4rem;">
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
+                        <input type="text" name="department" value="ECS" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Subjects Assigned *</label>
+                        <input type="text" name="subjects" placeholder="e.g. PLCA, DL, Embedded Systems" required
+                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center; background:var(--sage);">
+                    Register Faculty Account →
+                </button>
+            </form>
+
+            <div style="margin-top:1.25rem; font-size:0.82rem; color:#555; text-align:center;">
+                Already have an account? <a href="/login" style="color:#000; font-weight:700; text-decoration:underline;">Sign in to your portal</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const btnStudent = document.getElementById('tab-btn-student');
+            const btnTeacher = document.getElementById('tab-btn-teacher');
+            const formStudent = document.getElementById('form-student');
+            const formTeacher = document.getElementById('form-teacher');
+
+            if (tab === 'teacher') {
+                btnStudent.classList.remove('active');
+                btnTeacher.classList.add('active');
+                formStudent.style.display = 'none';
+                formTeacher.style.display = 'block';
+            } else {
+                btnTeacher.classList.remove('active');
+                btnStudent.classList.add('active');
+                formTeacher.style.display = 'none';
+                formStudent.style.display = 'block';
+            }
+        }
+
+        // Check query param
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('role') === 'teacher') {
+            switchTab('teacher');
+        }
+    </script>
+</body>
+</html>
+

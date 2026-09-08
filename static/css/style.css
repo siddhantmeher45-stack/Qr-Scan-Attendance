@@ -1,0 +1,549 @@
+/* =========================================
+   NEO-BRUTALIST DESIGN SYSTEM
+   AttendQR - College Attendance Management System
+   Palette: #ffe17c (Yellow), #171e19 (Charcoal),
+            #b7c6c2 (Sage), #000 (Black), #fff (White)
+   ========================================= */
+
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@400,500,700&display=swap');
+
+:root {
+    --yellow:     #ffe17c;
+    --charcoal:   #171e19;
+    --sage:       #b7c6c2;
+    --black:      #000000;
+    --white:      #ffffff;
+    --gray-mid:   #272727;
+    --gray-light: #f4f4f5;
+
+    --shadow-sm:  4px 4px 0px 0px #000000;
+    --shadow-md:  6px 6px 0px 0px #000000;
+    --shadow-lg:  8px 8px 0px 0px #000000;
+    --shadow-xl:  12px 12px 0px 0px #000000;
+
+    --border:     2px solid #000000;
+    --border-thick: 3px solid #000000;
+    --radius-btn: 0.65rem;
+    --radius-card: 0.75rem;
+
+    --font-heading: 'Cabinet Grotesk', system-ui, -apple-system, sans-serif;
+    --font-body:    'Satoshi', system-ui, -apple-system, sans-serif;
+
+    /* Theme colors */
+    --primary:     #ffe17c;
+    --secondary:   #b7c6c2;
+    --bg-dark:     #171e19;
+    --card-bg:     #ffffff;
+    --text-primary:#000000;
+    --text-muted:  #555555;
+    --success:     #16a34a;
+    --danger:      #dc2626;
+    --warning:     #d97706;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    font-weight: 500;
+    background-color: var(--yellow);
+    color: var(--black);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--charcoal); }
+::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border: 2px solid var(--black);
+}
+
+/* ── Background Patterns ── */
+.dot-bg {
+    background-color: var(--yellow);
+    background-image: radial-gradient(circle, rgba(0,0,0,0.14) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+}
+
+.light-dot-bg {
+    background-color: #fcfcfd;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.08) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+}
+
+/* ── Layout & Containers ── */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem;
+}
+
+.page-wrap {
+    padding-top: 72px;
+    min-height: 100vh;
+}
+
+/* ── Headings ── */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--black);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+}
+
+/* ── Top Navigation Bar ── */
+.nb-nav {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: var(--yellow);
+    border-bottom: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.75rem;
+    z-index: 1000;
+    box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+.nb-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1.35rem;
+    text-decoration: none;
+    color: var(--black);
+}
+
+.nb-nav-logo-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--black);
+    border: var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 2px 0 #000;
+    flex-shrink: 0;
+}
+
+.nb-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* ── Neo-Brutalist Cards ── */
+.nb-card {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.nb-card-dark {
+    background: var(--charcoal);
+    color: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+}
+
+.nb-card-dark h1, .nb-card-dark h2, .nb-card-dark h3, .nb-card-dark h4 {
+    color: var(--white);
+}
+
+.nb-card-sage {
+    background: var(--sage);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+}
+
+.nb-card-yellow {
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+}
+
+.login-card {
+    background: var(--white);
+    border: 3px solid #000;
+    border-radius: 14px;
+    padding: 2.25rem 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+/* ── Buttons ── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.4rem;
+    background: var(--black);
+    color: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-btn);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    user-select: none;
+}
+
+.btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+.btn-sm {
+    padding: 0.45rem 0.95rem;
+    font-size: 0.82rem;
+    border-radius: 6px;
+    box-shadow: 2.5px 2.5px 0 #000;
+}
+
+.btn-sm:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3.5px 3.5px 0 #000;
+}
+
+.btn-sm:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.btn-lg {
+    padding: 0.9rem 1.8rem;
+    font-size: 1.05rem;
+}
+
+.btn-primary,
+.btn-yellow {
+    background: var(--yellow) !important;
+    color: var(--black) !important;
+}
+
+.btn-secondary {
+    background: var(--white) !important;
+    color: var(--black) !important;
+}
+
+.btn-sage {
+    background: var(--sage) !important;
+    color: var(--black) !important;
+}
+
+.btn-danger {
+    background: var(--danger) !important;
+    color: var(--white) !important;
+}
+
+.btn-success {
+    background: var(--success) !important;
+    color: var(--white) !important;
+}
+
+/* Fallback for any button with inline light backgrounds */
+.btn[style*="background:var(--yellow)"],
+.btn[style*="background: var(--yellow)"],
+.btn[style*="background:var(--white)"],
+.btn[style*="background: var(--white)"],
+.btn[style*="background:var(--sage)"],
+.btn[style*="background: var(--sage)"],
+.btn[style*="background:#fff"],
+.btn[style*="background: #fff"] {
+    color: var(--black) !important;
+}
+
+
+/* ── Badges ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 5px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border: 1.5px solid #000;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    background: #fff;
+    color: #000;
+}
+
+.badge-primary { background: var(--yellow); color: #000; }
+.badge-warning { background: var(--yellow); color: #000; }
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-danger  { background: #fee2e2; color: #991b1b; }
+.badge-black   { background: #000; color: #fff; }
+.badge-sage    { background: var(--sage); color: #000; }
+
+/* ── Segmented Role Toggle ── */
+.role-toggle {
+    display: flex;
+    background: var(--gray-light);
+    border: var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+    box-shadow: 2px 2px 0 #000;
+}
+
+.role-option {
+    flex: 1;
+    padding: 0.65rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: #555;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.role-option.active {
+    background: var(--yellow);
+    color: #000;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+}
+
+/* ── Form Inputs ── */
+.input-group {
+    margin-bottom: 1.15rem;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--black);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: #000;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    background: #fffde7;
+    box-shadow: 2.5px 2.5px 0 #000;
+}
+
+/* ── Tables ── */
+.table-wrap {
+    overflow-x: auto;
+    border: var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    background: #fff;
+}
+
+.nb-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.88rem;
+}
+
+.nb-table thead {
+    background: var(--charcoal);
+    color: var(--yellow);
+}
+
+.nb-table th {
+    padding: 0.75rem 1rem;
+    font-weight: 800;
+    border-bottom: var(--border);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.nb-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    color: var(--black);
+    font-weight: 600;
+}
+
+.nb-table tbody tr:hover {
+    background: #fffde7;
+}
+
+.nb-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── Schedule Card ── */
+.schedule-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.25rem;
+    border: var(--border);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 3px 3px 0 #000;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.schedule-card:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 #000;
+}
+
+.schedule-active {
+    border-left: 8px solid var(--yellow);
+    background: #fffbe6;
+}
+
+/* ── Progress Bars ── */
+.progress-track {
+    background: #e4e4e7;
+    border: var(--border);
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 1px 1px 0 #000;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.progress-bar-fill.bg-success {
+    background: #22c55e;
+}
+
+.progress-bar-fill.bg-danger {
+    background: #ef4444;
+}
+
+/* ── Modals ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--white);
+    border: 3px solid #000;
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl);
+    padding: 2rem;
+    max-width: 520px;
+    width: 92%;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ── Code & Tags ── */
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background: var(--gray-light);
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    .nb-nav {
+        padding: 0 1rem;
+        height: auto;
+        min-height: 60px;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .nb-card, .login-card {
+        padding: 1.25rem 1rem;
+    }
+    .schedule-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
+
+.d-none {
+    display: none !important;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}

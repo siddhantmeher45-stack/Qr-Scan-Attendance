@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendQR | Student Dashboard</title>
+    <meta name="description" content="Student Attendance and QR Verification Portal for Fourth Year B.E. ECS.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+
+<body class="dot-bg">
+
+    <!-- ── Top Navbar ── -->
+    <nav class="nb-nav">
+        <a class="nb-nav-logo" href="/student-dashboard">
+            <div class="nb-nav-logo-icon" style="background:var(--yellow);">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    style="width:20px; height:20px;">
+                    <rect x="3" y="3" width="7" height="7" rx="1" fill="#171e19" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" fill="#171e19" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" fill="#171e19" />
+                    <rect x="14" y="14" width="3" height="3" fill="#171e19" />
+                    <rect x="18" y="18" width="3" height="3" fill="#171e19" />
+                    <rect x="14" y="18" width="3" height="3" fill="#171e19" />
+                </svg>
+            </div>
+            <span>Attend<span
+                    style="background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; margin-left:2px;">QR</span></span>
+            <span class="badge badge-primary" style="margin-left:0.5rem; font-size:0.75rem;">Student Hub</span>
+        </a>
+        <div class="nb-nav-right">
+            <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
+                📷 Scan Lecture QR
+            </button>
+            <button onclick="openStudentQrModal()" class="btn btn-sm btn-secondary" style="font-weight:800;">
+                🪪 My Student QR
+            </button>
+            <a href="/logout" class="btn btn-sm btn-danger">
+                Logout ↪
+            </a>
+        </div>
+    </nav>
+
+    <!-- ── Main Container ── -->
+    <div class="container" style="padding-top:1.5rem; padding-bottom:3.5rem;">
+
+        <!-- Notifications Bar -->
+        {% if notifications %}
+        <div style="margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+            {% for n in notifications %}
+            <div
+                style="background:#fff; border:2px solid #000; border-left:6px solid var(--yellow); padding:0.65rem 1rem; border-radius:6px; box-shadow:3px 3px 0 #000; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>🔔 {{ n['title'] }}:</strong> <span style="font-size:0.9rem; color:#333;">{{ n['message']
+                        }}</span>
+                </div>
+                <span style="font-size:0.75rem; color:#777;">{{ n['created_at'].split(' ')[0] }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Profile & Overall Attendance Summary Grid -->
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+            <!-- Student Profile Card -->
+            <div class="nb-card">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                        <div
+                            style="width:72px; height:72px; background:var(--yellow); border:2.5px solid #000; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; box-shadow:3px 3px 0 #000; flex-shrink:0;">
+                            🎓
+                        </div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                                <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ student['name'] }}</h1>
+                                <span class="badge badge-success">Active Enrolled</span>
+                            </div>
+                            <div
+                                style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
+                                <span><strong>PID:</strong> <code
+                                        style="background:var(--yellow); padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px;">{{ student['pid'] }}</code></span>
+                                <span>•</span>
+                                <span><strong>Roll No:</strong> {{ student['roll_number'] }}</span>
+                                <span>•</span>
+                                <span><strong>Div:</strong> {{ student['division'] }}</span>
+                                <span>•</span>
+                                <span><strong>Year:</strong> {{ student['year'] }}</span>
+                            </div>
+                            <div style="font-size:0.82rem; color:#444; margin-top:0.35rem;">
+                                <span><strong>Branch:</strong> {{ student['course'] }} ({{ student['department']
+                                    }})</span>
+                                <span style="margin-left:0.5rem;">•</span>
+                                <span style="margin-left:0.5rem;"><strong>Email:</strong> {{ student['email'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS</span>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                    <div style="font-size:0.85rem;">
+                        <strong>Today:</strong> {{ today_date }}
+                    </div>
+                    <div style="display:flex; gap:0.6rem;">
+                        <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
+                            📷 Scan Attendance QR
+                        </button>
+                        <button onclick="openStudentQrModal()" class="btn btn-sm btn-secondary">
+                            🪪 View My QR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Summary Metric Card -->
+            <div class="nb-card-dark" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <span
+                            style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--yellow);">Overall
+                            Attendance</span>
+                        {% if stats['overall_percentage'] >= 75 %}
+                        <span class="badge badge-success" style="font-size:0.7rem;">Eligible (≥ 75%)</span>
+                        {% else %}
+                        <span class="badge badge-danger" style="font-size:0.7rem;">Shortage (< 75%)</span>
+                                {% endif %}
+                    </div>
+
+                    <div style="display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.75rem;">
+                        <span
+                            style="font-size:3rem; font-weight:900; line-height:1; font-family:var(--font-heading); color:var(--yellow);">
+                            {{ stats['overall_percentage'] }}%
+                        </span>
+                        <span style="font-size:0.82rem; color:#aaa;">(Target: 75%)</span>
+                    </div>
+
+                    <!-- Dynamic Progress Bar -->
+                    <div class="progress-track" style="background:#272727; height:14px; margin-bottom:0.85rem;">
+                        <div class="progress-bar-fill {% if stats['overall_percentage'] >= 75 %}bg-success{% else %}bg-danger{% endif %}"
+                            data-width="{{ [stats['overall_percentage'], 100]|min }}%"></div>
+                    </div>
+                </div>
+
+                <div
+                    style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.82rem; border-top:1px solid #333; padding-top:0.65rem;">
+                    <div>Attended: <strong style="color:var(--yellow);">{{ stats['total_attended'] }}</strong> / {{
+                        stats['total_classes'] }}</div>
+                    <div style="text-align:right;">Missed: <strong style="color:#ef4444;">{{ stats['total_absent']
+                            }}</strong></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Active Timetable Lecture Banner -->
+        <div class="nb-card" style="background:var(--white); margin-bottom:2rem; padding:1.25rem 1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div
+                        style="width:48px; height:48px; background:var(--yellow); border:2px solid #000; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:2px 2px 0 #000; flex-shrink:0;">
+                        ⏰
+                    </div>
+                    <div>
+                        {% if current_lecture %}
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
+                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">LIVE LECTURE
+                                NOW</span>
+                            <strong style="font-size:1.15rem;">{{ current_lecture['subject'] }} ({{
+                                current_lecture['subject_code'] }})</strong>
+                        </div>
+                        <div style="font-size:0.85rem; color:#555;">
+                            👨‍🏫 {{ current_lecture['teacher_name'] }} | 🚪 Room: {{ current_lecture['room'] }} | ⏱ {{
+                            current_lecture['start_time'] }} - {{ current_lecture['end_time'] }}
+                        </div>
+                        {% else %}
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
+                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">Timetable
+                                Standby</span>
+                            <strong style="font-size:1.05rem;">No Active Lecture At This Moment</strong>
+                        </div>
+                        <div style="font-size:0.85rem; color:#666;">
+                            {% if upcoming_lecture %}
+                            Next up: <strong>{{ upcoming_lecture['subject'] }}</strong> ({{
+                            upcoming_lecture['teacher_name'] }}) at {{ upcoming_lecture['start_time'] }}
+                            {% else %}
+                            Regular lecture cycle is in standby or break period.
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
+                        Scan QR for Attendance ⚡
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject-Wise Attendance Breakdown -->
+        <div class="nb-card" style="margin-bottom:2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+                <h2 style="margin:0; font-size:1.3rem; display:flex; align-items:center; gap:0.4rem;">
+                    <span>📊</span> Subject-Wise Attendance Breakdown
+                </h2>
+                <span class="badge" style="background:var(--sage);">Mandatory 75% Requirement</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem;">
+                {% for sub in stats['subject_breakdowns'] %}
+                <div
+                    style="border:2px solid #000; border-radius:8px; padding:1rem; background:#fafafa; box-shadow:3px 3px 0 #000;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                        <strong style="font-size:1.05rem;">{{ sub['subject'] }}</strong>
+                        <span
+                            class="badge {% if sub['percentage'] >= 75 %}badge-success{% else %}badge-danger{% endif %}"
+                            style="font-size:0.72rem;">
+                            {{ sub['percentage'] }}%
+                        </span>
+                    </div>
+                    <div style="font-size:0.78rem; color:#555; margin-bottom:0.6rem;">
+                        Faculty: {{ sub['faculty'] }}
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="progress-track" style="height:10px; margin-bottom:0.5rem;">
+                        <div class="progress-bar-fill {% if sub['percentage'] >= 75 %}bg-success{% else %}bg-danger{% endif %}"
+                            data-width="{{ [sub['percentage'], 100]|min }}%"></div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#666;">
+                        <span>Attended: <strong>{{ sub['attended'] }}</strong></span>
+                        <span>Total: <strong>{{ sub['total'] }}</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Timetable Section -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+            <!-- Today's Schedule -->
+            <div class="nb-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h2 style="margin:0; font-size:1.25rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span>📅</span> Today's Lecture Schedule
+                    </h2>
+                    <span class="badge" style="background:#f4f4f5; border:1px solid #000;">{{ today_date.split(',')[0]
+                        }}</span>
+                </div>
+
+                {% if today_lectures %}
+                <div style="display:flex; flex-direction:column; gap:0.65rem;">
+                    {% for lec in today_lectures %}
+                    <div
+                        class="schedule-card {% if current_lecture and current_lecture['id'] == lec['id'] %}schedule-active{% endif %}">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:0.4rem;">
+                                <strong>{{ lec['subject'] }}</strong>
+                                <span
+                                    style="font-size:0.75rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; font-weight:700;">{{
+                                    lec['subject_code'] }}</span>
+                            </div>
+                            <div style="font-size:0.78rem; color:#555; margin-top:0.2rem;">
+                                ⏱ {{ lec['start_time'] }} - {{ lec['end_time'] }} | 🚪 Room: {{ lec['room'] }} | 👨‍🏫
+                                {{ lec['teacher_name'] }}
+                            </div>
+                        </div>
+                        <div>
+                            {% if current_lecture and current_lecture['id'] == lec['id'] %}
+                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">NOW</span>
+                            {% else %}
+                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">{{ lec['batch']
+                                }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="padding:1.5rem; text-align:center; color:#666; border:2px dashed #ccc; border-radius:8px;">
+                    No lectures scheduled for today.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Weekly Timetable Overview -->
+            <div class="nb-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h2 style="margin:0; font-size:1.25rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span>📚</span> Weekly Schedule (Div A)
+                    </h2>
+                    <span class="badge" style="background:var(--sage);">Sem VII</span>
+                </div>
+
+                <div class="table-wrap" style="max-height:260px; overflow-y:auto;">
+                    <table class="nb-table" style="font-size:0.82rem;">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Subject</th>
+                                <th>Faculty</th>
+                                <th>Room</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in weekly_timetable %}
+                            <tr>
+                                <td><strong>{{ row['day'] }}</strong></td>
+                                <td>{{ row['start_time'] }} - {{ row['end_time'] }}</td>
+                                <td>{{ row['subject'] }}</td>
+                                <td>{{ row['teacher_code'] }}</td>
+                                <td>{{ row['room'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Attendance History Log -->
+        <div class="nb-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h2 style="margin:0; font-size:1.3rem; display:flex; align-items:center; gap:0.4rem;">
+                    <span>📜</span> Chronological Attendance Records
+                </h2>
+                <span class="badge badge-primary">Official Log</span>
+            </div>
+
+            {% if history %}
+            <div class="table-wrap">
+                <table class="nb-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Faculty</th>
+                            <th>Lecture Window</th>
+                            <th>Scan Timestamp</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in history %}
+                        <tr>
+                            <td><strong>{{ r['date'] }}</strong></td>
+                            <td>{{ r['subject'] }}</td>
+                            <td>{{ r['teacher'] }}</td>
+                            <td>{{ r['lecture_time'] }}</td>
+                            <td><code>{{ r['timestamp'].split(' ')[1] }}</code></td>
+                            <td><span class="badge badge-success">✓ {{ r['status'] }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding:2rem; text-align:center; color:#666; border:2px dashed #ccc; border-radius:8px;">
+                No attendance logs found yet. Click "Scan Lecture QR" during an active lecture to mark your attendance!
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 1: QR ATTENDANCE SCANNER -->
+    <!-- ======================================================== -->
+    <div id="modal-scanner" class="modal-overlay">
+        <div class="modal-content">
+            <button onclick="closeScannerModal()"
+                style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+
+            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Live Scanner</span>
+            <h2 style="margin:0 0 0.4rem 0; font-size:1.4rem;">Scan Attendance QR</h2>
+            <p style="margin:0 0 1rem 0; font-size:0.85rem; color:#555;">Point your camera at the teacher's projected
+                attendance session QR code.</p>
+
+            <div id="scan-alert"
+                style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; font-weight:700;">
+            </div>
+
+            <!-- Viewfinder Container -->
+            <div
+                style="width:100%; max-width:340px; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; overflow:hidden; background:#000;">
+                <div id="qr-reader" style="width:100%;"></div>
+            </div>
+
+            <!-- Manual Token Fallback -->
+            <div style="border-top:2px dashed #ccc; padding-top:1rem; margin-top:1rem;">
+                <label style="display:block; font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">Or Enter Session
+                    Token Manually:</label>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="manual-token-input" placeholder="e.g. ATT-XXXXXXXX" style="flex:1;">
+                    <button type="button" onclick="submitManualToken()" class="btn btn-sm btn-primary"
+                        style="font-weight:800;">
+                        Submit →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2: STUDENT PROFILE QR -->
+    <!-- ======================================================== -->
+    <div id="modal-student-qr" class="modal-overlay">
+        <div class="modal-content" style="text-align:center; max-width:440px;">
+            <button onclick="closeStudentQrModal()"
+                style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+
+            <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Student ID QR</span>
+            <h2 style="margin:0 0 0.3rem 0; font-size:1.4rem;">{{ student['name'] }}</h2>
+            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">PID: <code>{{ student['pid'] }}</code> |
+                Roll: <strong>{{ student['roll_number'] }}</strong></p>
+
+            <div
+                style="width:240px; height:240px; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; padding:10px; background:#fff; box-shadow:4px 4px 0 #000;">
+                <img src="/student-qr/{{ student['pid'] }}" alt="Student ID QR"
+                    style="width:100%; height:100%; object-fit:contain;">
+            </div>
+
+            <div style="display:flex; justify-content:center; gap:0.75rem;">
+                <a href="/student-qr/{{ student['pid'] }}?download=1" class="btn btn-sm btn-primary"
+                    style="font-weight:800;">
+                    Download QR Image 📥
+                </a>
+                <button onclick="closeStudentQrModal()" class="btn btn-sm btn-secondary" style="font-weight:800;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Dynamic Progress Bar setup
+        function initProgressBars() {
+            document.querySelectorAll('.progress-bar-fill[data-width]').forEach(bar => {
+                bar.style.width = bar.getAttribute('data-width');
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initProgressBars);
+        } else {
+            initProgressBars();
+        }
+
+        let html5QrCodeScanner = null;
+
+        function openScannerModal() {
+            document.getElementById('modal-scanner').style.display = 'flex';
+            document.getElementById('scan-alert').style.display = 'none';
+
+            if (!html5QrCodeScanner) {
+                html5QrCodeScanner = new Html5Qrcode("qr-reader");
+            }
+
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length) {
+                    const cameraId = cameras[cameras.length - 1].id; // rear camera if available
+                    html5QrCodeScanner.start(
+                        cameraId,
+                        { fps: 10, qrbox: { width: 220, height: 220 } },
+                        (qrCodeMessage) => {
+                            // On successful scan
+                            html5QrCodeScanner.stop().then(() => {
+                                recordAttendanceScan(qrCodeMessage);
+                            });
+                        },
+                        (errorMessage) => {
+                            // Scanning error (ignored)
+                        }
+                    ).catch(err => {
+                        console.log("Scanner start error:", err);
+                        showScanAlert("Camera access failed. You can enter the session token manually below.", false);
+                    });
+                } else {
+                    showScanAlert("No camera detected on this device. Use manual token entry below.", false);
+                }
+            }).catch(err => {
+                showScanAlert("Camera permission error: " + err, false);
+            });
+        }
+
+        function closeScannerModal() {
+            if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
+                html5QrCodeScanner.stop().then(() => {
+                    document.getElementById('modal-scanner').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('modal-scanner').style.display = 'none';
+                });
+            } else {
+                document.getElementById('modal-scanner').style.display = 'none';
+            }
+        }
+
+        function openStudentQrModal() {
+            document.getElementById('modal-student-qr').style.display = 'flex';
+        }
+
+        function closeStudentQrModal() {
+            document.getElementById('modal-student-qr').style.display = 'none';
+        }
+
+        function submitManualToken() {
+            const token = document.getElementById('manual-token-input').value.trim();
+            if (!token) {
+                alert("Please enter a valid session token.");
+                return;
+            }
+            recordAttendanceScan(token);
+        }
+
+        function recordAttendanceScan(sessionToken) {
+            showScanAlert("Verifying session and marking attendance...", true);
+
+            fetch('/student/scan-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_token: sessionToken })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showScanAlert("✅ " + data.message, true);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showScanAlert("⚠️ " + (data.error || "Failed to mark attendance"), false);
+                    }
+                })
+                .catch(err => {
+                    showScanAlert("Network error: Could not reach attendance server.", false);
+                });
+        }
+
+        function showScanAlert(msg, isSuccess) {
+            const alertBox = document.getElementById('scan-alert');
+            alertBox.style.display = 'block';
+            alertBox.style.background = isSuccess ? '#e8f5e9' : '#ffebee';
+            alertBox.style.color = isSuccess ? '#1b5e20' : '#b71c1c';
+            alertBox.style.border = isSuccess ? '2px solid #2e7d32' : '2px solid #c62828';
+            alertBox.innerText = msg;
+        }
+    </script>
+</body>
+
+</html>
