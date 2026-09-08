@@ -10,7 +10,7 @@
 <body class="dot-bg" style="min-height:100vh; display:flex; flex-direction:column;">
 
     <!-- ── Navigation ── -->
-    <nav class="nb-nav" style="height:68px;">
+    <nav class="nb-nav">
         <a class="nb-nav-logo" href="/">
             <div class="nb-nav-logo-icon" style="width:38px; height:38px; background:var(--yellow); display:flex; align-items:center; justify-content:center; border:2px solid #000; border-radius:8px;">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:22px; height:22px;">
@@ -30,7 +30,7 @@
 
     </nav>
 
-    <div class="page-wrap auth-page" style="flex:1; display:flex; align-items:center; justify-content:center; padding:2.5rem 1rem;">
+    <div class="page-wrap auth-page" style="flex:1; display:flex; align-items:center; justify-content:center; padding:2rem 1rem 3rem 1rem;">
         <div class="login-card" style="max-width:560px; width:100%;">
 
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
@@ -71,49 +71,46 @@
                     💡 A permanent <strong>Student QR Code</strong> containing your unique PID will be created upon registration.
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                <div class="form-grid-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Full Name *</label>
-                        <input type="text" name="name" placeholder="e.g. Aryan Sharma" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="text" name="name" placeholder="e.g. Aryan Sharma" required>
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Personal ID (PID) * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
                         <input type="text" name="pid" placeholder="e.g. ECS2026006" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-transform:uppercase;">
+                               style="font-weight:700; text-transform:uppercase;">
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                <div class="form-grid-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Email Address *</label>
-                        <input type="email" name="email" placeholder="student@college.edu" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="email" name="email" placeholder="student@college.edu" required>
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="password" name="password" placeholder="••••••••" required>
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                <div class="form-grid-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
                         <input type="text" name="department" value="ECS" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; background:#f4f4f5;">
+                               style="background:#f4f4f5;">
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Course / Branch</label>
                         <input type="text" name="course" value="Electronics & Computer Science" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; background:#f4f4f5;">
+                               style="background:#f4f4f5;">
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:1.4rem;">
+                <div class="form-grid-3">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Year</label>
-                        <select name="year" style="width:100%; padding:0.65rem 0.5rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <select name="year" style="padding:0.65rem 0.5rem;">
                             <option value="Fourth Year" selected>Fourth Year</option>
                             <option value="Third Year">Third Year</option>
                             <option value="Second Year">Second Year</option>
@@ -122,12 +119,12 @@
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Division</label>
                         <input type="text" name="division" value="A" required maxlength="2"
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; text-transform:uppercase; text-align:center; font-weight:700;">
+                               style="text-transform:uppercase; text-align:center; font-weight:700;">
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Roll No. *</label>
                         <input type="text" name="roll_number" placeholder="e.g. 406" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-align:center;">
+                               style="font-weight:700; text-align:center;">
                     </div>
                 </div>
 
@@ -142,42 +139,37 @@
                     👨‍🏫 Faculty accounts have rights to initiate temporary lecture attendance QR sessions and export class reports.
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                <div class="form-grid-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Faculty Full Name *</label>
-                        <input type="text" name="name" placeholder="e.g. Dr. Rajesh Kumar" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="text" name="name" placeholder="e.g. Dr. Rajesh Kumar" required>
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Teacher ID * <span style="font-size:0.7rem; color:#555;">(Unique)</span></label>
                         <input type="text" name="teacher_id" placeholder="e.g. T_RK" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700; text-transform:uppercase;">
+                               style="font-weight:700; text-transform:uppercase;">
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:0.9rem;">
+                <div class="form-grid-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">College Email *</label>
-                        <input type="email" name="email" placeholder="faculty@college.edu" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="email" name="email" placeholder="faculty@college.edu" required>
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="password" name="password" placeholder="••••••••" required>
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 2fr; gap:0.9rem; margin-bottom:1.4rem;">
+                <div class="form-grid-1-2">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Department</label>
-                        <input type="text" name="department" value="ECS" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="text" name="department" value="ECS" required>
                     </div>
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Subjects Assigned *</label>
-                        <input type="text" name="subjects" placeholder="e.g. PLCA, DL, Embedded Systems" required
-                               style="width:100%; padding:0.65rem 0.8rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
+                        <input type="text" name="subjects" placeholder="e.g. PLCA, DL, Embedded Systems" required>
                     </div>
                 </div>
 

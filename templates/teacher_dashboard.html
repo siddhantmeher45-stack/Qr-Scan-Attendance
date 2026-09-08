@@ -59,40 +59,42 @@
         <div class="resp-grid-2-1">
             
             <!-- Faculty Profile Card -->
-            <div class="nb-card">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div style="display:flex; gap:1.25rem; align-items:center;">
-                        <div style="width:72px; height:72px; background:var(--sage); border:2.5px solid #000; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; box-shadow:3px 3px 0 #000;">
-                            👨‍🏫
+            <div class="nb-card" style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                        <div style="display:flex; gap:1.25rem; align-items:center;">
+                            <div class="profile-avatar" style="background:var(--sage);">
+                                👨‍🏫
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                                    <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ teacher['name'] }}</h1>
+                                    <span class="badge badge-success">Faculty Incharge</span>
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
+                                    <span><strong>Teacher ID:</strong> <code style="background:#b7c6c2; padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px; font-weight:800;">{{ teacher['teacher_id'] }}</code></span>
+                                    <span>•</span>
+                                    <span><strong>Email:</strong> {{ teacher['email'] }}</span>
+                                    <span>•</span>
+                                    <span><strong>Dept:</strong> {{ teacher['department'] }}</span>
+                                </div>
+                                <div style="font-size:0.82rem; color:#222; margin-top:0.4rem;">
+                                    📚 <strong>Assigned Subjects:</strong> <span style="background:var(--yellow); padding:0.15rem 0.5rem; border-radius:4px; font-weight:700; border:1px solid #000;">{{ teacher['subjects'] }}</span>
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-                                <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ teacher['name'] }}</h1>
-                                <span class="badge badge-success">Faculty Incharge</span>
-                            </div>
-                            <div style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
-                                <span><strong>Teacher ID:</strong> <code style="background:#b7c6c2; padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px; font-weight:800;">{{ teacher['teacher_id'] }}</code></span>
-                                <span>•</span>
-                                <span><strong>Email:</strong> {{ teacher['email'] }}</span>
-                                <span>•</span>
-                                <span><strong>Dept:</strong> {{ teacher['department'] }}</span>
-                            </div>
-                            <div style="font-size:0.82rem; color:#222; margin-top:0.4rem;">
-                                📚 <strong>Assigned Subjects:</strong> <span style="background:var(--yellow); padding:0.15rem 0.5rem; border-radius:4px; font-weight:700; border:1px solid #000;">{{ teacher['subjects'] }}</span>
-                            </div>
+                            <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS (Div A)</span>
                         </div>
-                    </div>
-                    <div>
-                        <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS (Div A)</span>
                     </div>
                 </div>
 
-                <div style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                <div style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; font-size:0.85rem;">
                     <div>
                         <strong>Today:</strong> {{ today_date }}
                     </div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button onclick="openStartSessionModal()" class="btn btn-sm" style="background:var(--yellow);">
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <button onclick="openStartSessionModal()" class="btn btn-sm" style="background:var(--yellow); font-weight:800;">
                             ⚡ New Attendance Session
                         </button>
                     </div>
@@ -136,7 +138,7 @@
                     </div>
                 </div>
 
-                <div style="display:flex; gap:0.6rem;">
+                <div class="btn-group-responsive">
                     <button onclick="viewLiveQr()" class="btn" style="background:#000; color:#fff;">
                         🖥 Project Attendance QR
                     </button>
@@ -287,7 +289,7 @@
                     </thead>
                     <tbody id="roster-tbody">
                         {% for s in roster %}
-                        <tr id="row-{{ s['pid'] }}" style="{{ 'background:#e8f5e9;' if s['status'] == 'Present' else '' }}">
+                        <tr id="row-{{ s['pid'] }}" {% if s['status'] == 'Present' %}style="background:#e8f5e9;"{% endif %}>
                             <td><strong>{{ s['roll_number'] }}</strong></td>
                             <td><code>{{ s['pid'] }}</code></td>
                             <td><span style="font-weight:700;">{{ s['name'] }}</span></td>
@@ -400,11 +402,13 @@
     <!-- ======================================================== -->
     <div id="modal-start-session" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
         <div class="nb-card" style="max-width:500px; width:92%; position:relative; padding:2rem;">
-            <button onclick="closeStartSessionModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+            <button onclick="closeStartSessionModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Attendance Setup</span>
-            <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Initiate Attendance QR Session</h2>
-            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Create a temporary secure QR code for students to scan during lecture.</p>
+            <div class="modal-header-safe">
+                <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Attendance Setup</span>
+                <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Initiate Attendance QR Session</h2>
+                <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Create a temporary secure QR code for students to scan during lecture.</p>
+            </div>
 
             <form id="start-session-form" onsubmit="submitStartSession(event)">
                 <div class="input-group" style="margin-bottom:1rem;">
@@ -417,7 +421,7 @@
                     </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin-bottom:1rem;">
+                <div class="form-grid-2" style="margin-bottom:1rem;">
                     <div class="input-group">
                         <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Class & Branch</label>
                         <input type="text" id="session-class" value="Fourth Year B.E. ECS" readonly
@@ -452,16 +456,18 @@
     <!-- ======================================================== -->
     <div id="modal-project-qr" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
         <div class="nb-card" style="max-width:540px; width:92%; text-align:center; position:relative; padding:2rem 1.5rem; background:#fff;">
-            <button onclick="closeProjectQrModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:34px; height:34px; font-weight:800; cursor:pointer;">✕</button>
+            <button onclick="closeProjectQrModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Projector Mode</span>
-            <h2 id="projector-subject-title" style="margin:0 0 0.25rem 0; font-size:1.6rem; font-weight:800;">Lecture Attendance QR</h2>
-            <div style="font-size:0.85rem; color:#444; margin-bottom:1rem;">
-                Scan with AttendQR Student Account • Class: <strong>Fourth Year ECS (Div A)</strong>
+            <div class="modal-header-safe">
+                <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Projector Mode</span>
+                <h2 id="projector-subject-title" style="margin:0 0 0.25rem 0; font-size:1.6rem; font-weight:800;">Lecture Attendance QR</h2>
+                <div style="font-size:0.85rem; color:#444; margin-bottom:1rem;">
+                    Scan with AttendQR Student Account • Class: <strong>Fourth Year ECS (Div A)</strong>
+                </div>
             </div>
 
             <!-- Dynamic Session QR Code Container -->
-            <div style="margin:0 auto 1.25rem auto; width:260px; height:260px; padding:12px; background:var(--yellow); border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000;">
+            <div style="margin:0 auto 1.25rem auto; max-width:240px; width:100%; aspect-ratio:1/1; padding:12px; background:var(--yellow); border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000;">
                 <img id="projector-qr-img" src="" alt="Live Attendance QR" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
             </div>
 
@@ -487,7 +493,7 @@
                 </div>
             </div>
 
-            <div style="display:flex; gap:0.6rem; justify-content:center;">
+            <div class="btn-group-responsive" style="justify-content:center;">
                 <button onclick="closeProjectQrModal()" class="btn btn-sm" style="background:#000; color:#fff;">
                     Done / Keep Live in Background
                 </button>
@@ -503,11 +509,13 @@
     <!-- ======================================================== -->
     <div id="modal-export" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
         <div class="nb-card" style="max-width:480px; width:92%; position:relative; padding:2rem;">
-            <button onclick="closeExportModal()" style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+            <button onclick="closeExportModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <span class="badge badge-success" style="margin-bottom:0.4rem; display:inline-block;">Excel Export (.XLSX)</span>
-            <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Export Attendance Report</h2>
-            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Generate a formatted Microsoft Excel spreadsheet containing all student PIDs, timestamps, and lecture details.</p>
+            <div class="modal-header-safe">
+                <span class="badge badge-success" style="margin-bottom:0.4rem; display:inline-block;">Excel Export (.XLSX)</span>
+                <h2 style="margin:0 0 0.5rem 0; font-size:1.4rem;">Export Attendance Report</h2>
+                <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">Generate a formatted Microsoft Excel spreadsheet containing all student PIDs, timestamps, and lecture details.</p>
+            </div>
 
             <form action="/export-attendance-excel" method="GET">
                 <div class="input-group" style="margin-bottom:1rem;">

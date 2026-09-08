@@ -8,23 +8,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         html, body {
-            height: 100vh;
-            max-height: 100vh;
-            overflow: hidden !important;
+            min-height: 100vh;
             margin: 0;
             padding: 0;
             background-color: var(--yellow);
         }
         .login-viewport {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             box-sizing: border-box;
         }
         .login-nav {
-            height: 52px;
-            min-height: 52px;
+            height: 56px;
+            min-height: 56px;
             background: var(--yellow);
             border-bottom: 2px solid #000;
             display: flex;
@@ -36,31 +33,29 @@
         }
         .login-main {
             flex: 1;
-            min-height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.75rem 1rem;
+            padding: 1.5rem 1rem;
             box-sizing: border-box;
-            overflow: hidden;
         }
         .login-card-compact {
-            max-width: 420px;
+            max-width: 440px;
             width: 100%;
             background: #ffffff;
             border: 3px solid #000000;
             border-radius: 12px;
-            padding: 1.15rem 1.35rem;
+            padding: 1.5rem 1.6rem;
             box-shadow: 6px 6px 0px #000000;
             box-sizing: border-box;
         }
         .compact-input {
             width: 100%;
-            padding: 0.5rem 0.75rem;
+            padding: 0.6rem 0.8rem;
             border: 2px solid #000000;
             border-radius: 6px;
             font-family: inherit;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             font-weight: 600;
             box-sizing: border-box;
             background: #fff;
@@ -68,29 +63,21 @@
         .compact-input:focus {
             outline: none;
             background: #fffde7;
-            box-shadow: 2px 2px 0 #000;
+            box-shadow: 2.5px 2.5px 0 #000;
         }
 
         @media (max-width: 600px) {
-
             .login-nav {
                 padding: 0 0.85rem;
             }
             .nb-nav-logo {
                 font-size: 1.05rem !important;
             }
-            .login-viewport {
-                height: auto !important;
-                min-height: 100vh !important;
-                overflow-y: auto !important;
-            }
             .login-main {
-                padding: 1.25rem 0.75rem !important;
-                min-height: auto !important;
-                overflow: visible !important;
+                padding: 1.25rem 0.85rem !important;
             }
             .login-card-compact {
-                padding: 1.15rem 0.95rem !important;
+                padding: 1.25rem 1.1rem !important;
             }
         }
     </style>
@@ -180,25 +167,27 @@
                 </button>
             </form>
 
-            <!-- Quick Demo Accounts Block -->
-            <div style="margin-top:0.65rem; background:#fff; border:2px solid #000; border-radius:8px; padding:0.55rem 0.75rem; box-shadow:2.5px 2.5px 0 #000;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; border-bottom:1px dashed #ddd; padding-bottom:0.25rem;">
-                    <span style="font-weight:800; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em;">⚡ Quick Fill Demo Accounts</span>
-                    <span style="font-size:0.62rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:3px; font-weight:700;">1-CLICK</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem;">
-                    <a href="/register?role=student" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.35rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f9f9fa'">
-                        <div style="font-weight:800; font-size:0.74rem;">🎓 New Student</div>
-                        <div style="font-size:0.68rem; color:#444;">Register fresh PID</div>
-                        <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Sign Up →</div>
-                    </a>
-                    <div onclick="fillDemo('teacher', 'T_VR', 'teacher123')" style="cursor:pointer; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.35rem 0.5rem; transition:transform 0.1s;" onmouseover="this.style.background='#b7c6c2'" onmouseout="this.style.background='#f9f9fa'">
-                        <div style="font-weight:800; font-size:0.74rem;">👨‍🏫 Teacher (VR)</div>
-                        <div style="font-size:0.68rem; color:#444;">ID: <code>T_VR</code> (PLCA)</div>
-                        <div style="font-size:0.65rem; color:#777;">Pass: teacher123</div>
+            <!-- Quick Demo Accounts (Collapsible for Clean Production Appearance) -->
+            <details class="demo-credentials-accordion">
+                <summary>
+                    <span>⚡ Quick Fill Demo Accounts</span>
+                    <span style="font-size:0.65rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:3px; font-weight:700;">1-CLICK</span>
+                </summary>
+                <div class="demo-credentials-body">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem;">
+                        <a href="/register?role=student" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f9f9fa'">
+                            <div style="font-weight:800; font-size:0.74rem;">🎓 New Student</div>
+                            <div style="font-size:0.68rem; color:#444;">Register fresh PID</div>
+                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Sign Up →</div>
+                        </a>
+                        <div onclick="fillDemo('teacher', 'T_VR', 'teacher123')" style="cursor:pointer; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s;" onmouseover="this.style.background='#b7c6c2'" onmouseout="this.style.background='#f9f9fa'">
+                            <div style="font-weight:800; font-size:0.74rem;">👨‍🏫 Teacher (VR)</div>
+                            <div style="font-size:0.68rem; color:#444;">ID: <code>T_VR</code> (PLCA)</div>
+                            <div style="font-size:0.65rem; color:#777;">Pass: teacher123</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </details>
 
             <!-- Footer Links -->
             <div style="margin-top:0.6rem; font-size:0.75rem; color:#555; text-align:center; display:flex; justify-content:center; gap:1rem;">

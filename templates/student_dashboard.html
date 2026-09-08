@@ -68,50 +68,46 @@
 
 
             <!-- Student Profile Card -->
-            <div class="nb-card">
-                <div
-                    style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-                    <div style="display:flex; gap:1.25rem; align-items:center;">
-                        <div
-                            style="width:72px; height:72px; background:var(--yellow); border:2.5px solid #000; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; box-shadow:3px 3px 0 #000; flex-shrink:0;">
-                            🎓
-                        </div>
-                        <div>
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-                                <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ student['name'] }}</h1>
-                                <span class="badge badge-success">Active Enrolled</span>
+            <div class="nb-card" style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                        <div style="display:flex; gap:1.25rem; align-items:center;">
+                            <div class="profile-avatar" style="background:var(--yellow);">
+                                🎓
                             </div>
-                            <div
-                                style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
-                                <span><strong>PID:</strong> <code
-                                        style="background:var(--yellow); padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px;">{{ student['pid'] }}</code></span>
-                                <span>•</span>
-                                <span><strong>Roll No:</strong> {{ student['roll_number'] }}</span>
-                                <span>•</span>
-                                <span><strong>Div:</strong> {{ student['division'] }}</span>
-                                <span>•</span>
-                                <span><strong>Year:</strong> {{ student['year'] }}</span>
-                            </div>
-                            <div style="font-size:0.82rem; color:#444; margin-top:0.35rem;">
-                                <span><strong>Branch:</strong> {{ student['course'] }} ({{ student['department']
-                                    }})</span>
-                                <span style="margin-left:0.5rem;">•</span>
-                                <span style="margin-left:0.5rem;"><strong>Email:</strong> {{ student['email'] }}</span>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                                    <h1 style="margin:0; font-size:1.75rem; font-weight:800;">{{ student['name'] }}</h1>
+                                    <span class="badge badge-success">Active Enrolled</span>
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#444; margin-top:0.35rem;">
+                                    <span><strong>PID:</strong> <code style="background:var(--yellow); padding:0.15rem 0.4rem; border:1px solid #000; border-radius:4px;">{{ student['pid'] }}</code></span>
+                                    <span>•</span>
+                                    <span><strong>Roll No:</strong> {{ student['roll_number'] }}</span>
+                                    <span>•</span>
+                                    <span><strong>Div:</strong> {{ student['division'] }}</span>
+                                    <span>•</span>
+                                    <span><strong>Year:</strong> {{ student['year'] }}</span>
+                                </div>
+                                <div style="font-size:0.82rem; color:#444; margin-top:0.35rem;">
+                                    <span><strong>Branch:</strong> {{ student['course'] }} ({{ student['department'] }})</span>
+                                    <span style="margin-left:0.5rem;">•</span>
+                                    <span style="margin-left:0.5rem;"><strong>Email:</strong> {{ student['email'] }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS</span>
+                        <div>
+                            <span class="badge" style="background:#000; color:#fff;">Fourth Year B.E. ECS</span>
+                        </div>
                     </div>
                 </div>
 
-                <div
-                    style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                <div style="margin-top:1.25rem; padding-top:1rem; border-top:2px dashed #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
                     <div style="font-size:0.85rem;">
                         <strong>Today:</strong> {{ today_date }}
                     </div>
-                    <div style="display:flex; gap:0.6rem;">
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
                         <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
                             📷 Scan Attendance QR
                         </button>
@@ -123,22 +119,19 @@
             </div>
 
             <!-- Attendance Summary Metric Card -->
-            <div class="nb-card-dark" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div class="nb-card-dark" style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">
                 <div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                        <span
-                            style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--yellow);">Overall
-                            Attendance</span>
+                        <span style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--yellow);">Overall Attendance</span>
                         {% if stats['overall_percentage'] >= 75 %}
                         <span class="badge badge-success" style="font-size:0.7rem;">Eligible (≥ 75%)</span>
                         {% else %}
                         <span class="badge badge-danger" style="font-size:0.7rem;">Shortage (< 75%)</span>
-                                {% endif %}
+                        {% endif %}
                     </div>
 
                     <div style="display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.75rem;">
-                        <span
-                            style="font-size:3rem; font-weight:900; line-height:1; font-family:var(--font-heading); color:var(--yellow);">
+                        <span style="font-size:3rem; font-weight:900; line-height:1; font-family:var(--font-heading); color:var(--yellow);">
                             {{ stats['overall_percentage'] }}%
                         </span>
                         <span style="font-size:0.82rem; color:#aaa;">(Target: 75%)</span>
@@ -151,12 +144,9 @@
                     </div>
                 </div>
 
-                <div
-                    style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.82rem; border-top:1px solid #333; padding-top:0.65rem;">
-                    <div>Attended: <strong style="color:var(--yellow);">{{ stats['total_attended'] }}</strong> / {{
-                        stats['total_classes'] }}</div>
-                    <div style="text-align:right;">Missed: <strong style="color:#ef4444;">{{ stats['total_absent']
-                            }}</strong></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.82rem; border-top:1px solid #333; padding-top:0.65rem;">
+                    <div>Attended: <strong style="color:var(--yellow);">{{ stats['total_attended'] }}</strong> / {{ stats['total_classes'] }}</div>
+                    <div style="text-align:right;">Missed: <strong style="color:#ef4444;">{{ stats['total_absent'] }}</strong></div>
                 </div>
             </div>
 
@@ -166,32 +156,26 @@
         <div class="nb-card" style="background:var(--white); margin-bottom:2rem; padding:1.25rem 1.5rem;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
                 <div style="display:flex; align-items:center; gap:1rem;">
-                    <div
-                        style="width:48px; height:48px; background:var(--yellow); border:2px solid #000; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:2px 2px 0 #000; flex-shrink:0;">
+                    <div style="width:48px; height:48px; background:var(--yellow); border:2px solid #000; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:2px 2px 0 #000; flex-shrink:0;">
                         ⏰
                     </div>
                     <div>
                         {% if current_lecture %}
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
-                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">LIVE LECTURE
-                                NOW</span>
-                            <strong style="font-size:1.15rem;">{{ current_lecture['subject'] }} ({{
-                                current_lecture['subject_code'] }})</strong>
+                            <span class="badge badge-warning" style="background:#ff5f57; color:#fff;">LIVE LECTURE NOW</span>
+                            <strong style="font-size:1.15rem;">{{ current_lecture['subject'] }} ({{ current_lecture['subject_code'] }})</strong>
                         </div>
                         <div style="font-size:0.85rem; color:#555;">
-                            👨‍🏫 {{ current_lecture['teacher_name'] }} | 🚪 Room: {{ current_lecture['room'] }} | ⏱ {{
-                            current_lecture['start_time'] }} - {{ current_lecture['end_time'] }}
+                            👨‍🏫 {{ current_lecture['teacher_name'] }} | 🚪 Room: {{ current_lecture['room'] }} | ⏱ {{ current_lecture['start_time'] }} - {{ current_lecture['end_time'] }}
                         </div>
                         {% else %}
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
-                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">Timetable
-                                Standby</span>
+                            <span class="badge" style="background:#f4f4f5; border:1px solid #000;">Timetable Standby</span>
                             <strong style="font-size:1.05rem;">No Active Lecture At This Moment</strong>
                         </div>
                         <div style="font-size:0.85rem; color:#666;">
                             {% if upcoming_lecture %}
-                            Next up: <strong>{{ upcoming_lecture['subject'] }}</strong> ({{
-                            upcoming_lecture['teacher_name'] }}) at {{ upcoming_lecture['start_time'] }}
+                            Next up: <strong>{{ upcoming_lecture['subject'] }}</strong> ({{ upcoming_lecture['teacher_name'] }}) at {{ upcoming_lecture['start_time'] }}
                             {% else %}
                             Regular lecture cycle is in standby or break period.
                             {% endif %}
@@ -217,7 +201,7 @@
                 <span class="badge" style="background:var(--sage);">Mandatory 75% Requirement</span>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap:1rem;">
                 {% for sub in stats['subject_breakdowns'] %}
                 <div
                     style="border:2px solid #000; border-radius:8px; padding:1rem; background:#fafafa; box-shadow:3px 3px 0 #000;">
@@ -385,13 +369,13 @@
     <!-- ======================================================== -->
     <div id="modal-scanner" class="modal-overlay">
         <div class="modal-content">
-            <button onclick="closeScannerModal()"
-                style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+            <button onclick="closeScannerModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Live Scanner</span>
-            <h2 style="margin:0 0 0.4rem 0; font-size:1.4rem;">Scan Attendance QR</h2>
-            <p style="margin:0 0 1rem 0; font-size:0.85rem; color:#555;">Point your camera at the teacher's projected
-                attendance session QR code.</p>
+            <div class="modal-header-safe">
+                <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Live Scanner</span>
+                <h2 style="margin:0 0 0.4rem 0; font-size:1.4rem;">Scan Attendance QR</h2>
+                <p style="margin:0 0 1rem 0; font-size:0.85rem; color:#555;">Point your camera at the teacher's projected attendance session QR code.</p>
+            </div>
 
             <div id="scan-alert"
                 style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; font-weight:700;">
@@ -405,12 +389,11 @@
 
             <!-- Manual Token Fallback -->
             <div style="border-top:2px dashed #ccc; padding-top:1rem; margin-top:1rem;">
-                <label style="display:block; font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">Or Enter Session
-                    Token Manually:</label>
+                <label style="display:block; font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">Or Enter Session Token Manually:</label>
                 <div style="display:flex; gap:0.5rem;">
                     <input type="text" id="manual-token-input" placeholder="e.g. ATT-XXXXXXXX" style="flex:1;">
                     <button type="button" onclick="submitManualToken()" class="btn btn-sm btn-primary"
-                        style="font-weight:800;">
+                        style="font-weight:800; white-space:nowrap;">
                         Submit →
                     </button>
                 </div>
@@ -423,21 +406,21 @@
     <!-- ======================================================== -->
     <div id="modal-student-qr" class="modal-overlay">
         <div class="modal-content" style="text-align:center; max-width:440px;">
-            <button onclick="closeStudentQrModal()"
-                style="position:absolute; top:1rem; right:1rem; background:#000; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-weight:800; cursor:pointer;">✕</button>
+            <button onclick="closeStudentQrModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Student ID QR</span>
-            <h2 style="margin:0 0 0.3rem 0; font-size:1.4rem;">{{ student['name'] }}</h2>
-            <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">PID: <code>{{ student['pid'] }}</code> |
-                Roll: <strong>{{ student['roll_number'] }}</strong></p>
+            <div class="modal-header-safe">
+                <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Student ID QR</span>
+                <h2 style="margin:0 0 0.3rem 0; font-size:1.4rem;">{{ student['name'] }}</h2>
+                <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">PID: <code>{{ student['pid'] }}</code> | Roll: <strong>{{ student['roll_number'] }}</strong></p>
+            </div>
 
             <div
-                style="width:240px; height:240px; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; padding:10px; background:#fff; box-shadow:4px 4px 0 #000;">
+                style="width:240px; height:240px; max-width:100%; aspect-ratio:1/1; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; padding:10px; background:#fff; box-shadow:4px 4px 0 #000;">
                 <img src="/student-qr/{{ student['pid'] }}" alt="Student ID QR"
                     style="width:100%; height:100%; object-fit:contain;">
             </div>
 
-            <div style="display:flex; justify-content:center; gap:0.75rem;">
+            <div class="btn-group-responsive" style="justify-content:center; gap:0.75rem;">
                 <a href="/student-qr/{{ student['pid'] }}?download=1" class="btn btn-sm btn-primary"
                     style="font-weight:800;">
                     Download QR Image 📥
