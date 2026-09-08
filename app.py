@@ -122,12 +122,17 @@ def register_student_post():
 
 @app.route('/register-teacher-post', methods=['POST'])
 def register_teacher_post():
+    secret_code = request.form.get('secret_code', '').strip()
     teacher_id = request.form.get('teacher_id', '').strip().upper()
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip().lower()
     password = request.form.get('password', '').strip()
     department = request.form.get('department', 'ECS').strip()
     subjects = request.form.get('subjects', '').strip()
+
+    TEACHER_SECRET_CODE = '031926'
+    if secret_code != TEACHER_SECRET_CODE:
+        return render_template('register.html', active_tab='teacher', error="Invalid Faculty Secret Code. Only authorized teachers can create an account.")
 
     if not all([teacher_id, name, email, password, subjects]):
         return render_template('register.html', active_tab='teacher', error="All fields marked with * are required.")

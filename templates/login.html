@@ -167,23 +167,39 @@
                 </button>
             </form>
 
+            <!-- Dynamic Registration Callout Based on Selected Role -->
+            <div id="registration-prompt" style="margin-top:0.75rem; text-align:center; font-size:0.82rem; padding:0.5rem 0.65rem; border-radius:6px; background:#f9f9fa; border:1.5px solid #000; box-shadow:2px 2px 0 #000;">
+                <div id="student-reg-prompt">
+                    New student? <a href="/register?role=student" style="color:#000; font-weight:800; text-decoration:underline;">Create Student Account & QR →</a>
+                </div>
+                <div id="teacher-reg-prompt" style="display:none;">
+                    New faculty member? <a href="/register?role=teacher" style="color:#000; font-weight:800; text-decoration:underline;">Register Teacher Account (Code Required) 👨‍🏫 →</a>
+                </div>
+            </div>
+
             <!-- Quick Demo Accounts (Collapsible for Clean Production Appearance) -->
             <details class="demo-credentials-accordion">
                 <summary>
-                    <span>⚡ Quick Fill Demo Accounts</span>
-                    <span style="font-size:0.65rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:3px; font-weight:700;">1-CLICK</span>
+                    <span>⚡ Quick Registration & Demo Fill</span>
+                    <span style="font-size:0.65rem; background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:3px; font-weight:700;">OPTIONS</span>
                 </summary>
                 <div class="demo-credentials-body">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem; margin-bottom:0.45rem;">
                         <a href="/register?role=student" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f9f9fa'">
-                            <div style="font-weight:800; font-size:0.74rem;">🎓 New Student</div>
+                            <div style="font-weight:800; font-size:0.74rem;">🎓 Student Sign Up</div>
                             <div style="font-size:0.68rem; color:#444;">Register fresh PID</div>
-                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Sign Up →</div>
+                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Student Register →</div>
                         </a>
-                        <div onclick="fillDemo('teacher', 'T_VR', 'teacher123')" style="cursor:pointer; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s;" onmouseover="this.style.background='#b7c6c2'" onmouseout="this.style.background='#f9f9fa'">
-                            <div style="font-weight:800; font-size:0.74rem;">👨‍🏫 Teacher (VR)</div>
-                            <div style="font-size:0.68rem; color:#444;">ID: <code>T_VR</code> (PLCA)</div>
-                            <div style="font-size:0.65rem; color:#777;">Pass: teacher123</div>
+                        <a href="/register?role=teacher" style="text-decoration:none; color:inherit; background:#f9f9fa; border:1.5px solid #000; border-radius:5px; padding:0.4rem 0.5rem; transition:transform 0.1s; display:block;" onmouseover="this.style.background='#b7c6c2'" onmouseout="this.style.background='#f9f9fa'">
+                            <div style="font-weight:800; font-size:0.74rem;">👨‍🏫 Teacher Sign Up</div>
+                            <div style="font-size:0.68rem; color:#444;">Code required</div>
+                            <div style="font-size:0.65rem; color:#166534; font-weight:700;">+ Teacher Register →</div>
+                        </a>
+                    </div>
+                    <div style="border-top:1px dashed #ccc; padding-top:0.35rem; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.68rem; color:#666;">Or 1-click fill faculty:</span>
+                        <div onclick="fillDemo('teacher', 'T_VR', 'teacher123')" style="cursor:pointer; background:#f4f4f5; border:1px solid #000; border-radius:4px; padding:0.2rem 0.5rem; font-size:0.72rem; font-weight:800;" onmouseover="this.style.background='#ffe17c'" onmouseout="this.style.background='#f4f4f5'">
+                            ⚡ Fill Teacher (T_VR)
                         </div>
                     </div>
                 </div>
@@ -208,6 +224,8 @@
         const teacherBtn = document.getElementById('btn-teacher');
         const identifierLabel = document.getElementById('identifier-label');
         const identifierInput = document.getElementById('identifier-input');
+        const studentPrompt = document.getElementById('student-reg-prompt');
+        const teacherPrompt = document.getElementById('teacher-reg-prompt');
 
         roleInput.value = selectedRole;
 
@@ -216,11 +234,15 @@
             teacherBtn.classList.add('active');
             identifierLabel.textContent = "Teacher ID / Faculty Email";
             identifierInput.placeholder = "e.g. T_VR or vr@college.edu";
+            studentPrompt.style.display = 'none';
+            teacherPrompt.style.display = 'block';
         } else {
             teacherBtn.classList.remove('active');
             studentBtn.classList.add('active');
             identifierLabel.textContent = "Personal ID (PID) / Email / Roll Number";
             identifierInput.placeholder = "e.g. ECS2026001 or aryan@college.edu";
+            teacherPrompt.style.display = 'none';
+            studentPrompt.style.display = 'block';
         }
     }
 
