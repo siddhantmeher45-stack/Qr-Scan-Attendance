@@ -80,6 +80,10 @@ CREATE TABLE attendance_sessions (
     end_time TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     status TEXT NOT NULL DEFAULT 'active', -- 'active', 'closed', 'expired'
+    latitude REAL,
+    longitude REAL,
+    radius_meters REAL DEFAULT 50.0,
+    geofence_enabled INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -101,6 +105,10 @@ CREATE TABLE attendance_records (
     lecture_time TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL DEFAULT 'Present',
+    student_lat REAL,
+    student_lng REAL,
+    distance_meters REAL,
+    geofence_verified INTEGER DEFAULT 1,
     FOREIGN KEY (session_id) REFERENCES attendance_sessions(id),
     UNIQUE (session_id, pid) -- Duplicate prevention per session
 );

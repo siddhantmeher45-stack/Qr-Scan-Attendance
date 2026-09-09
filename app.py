@@ -15,18 +15,19 @@ from database import (
     get_current_active_lecture, create_attendance_session, get_session_by_token,
     close_attendance_session, get_active_session_for_teacher, mark_qr_attendance,
     get_session_live_attendance, get_student_attendance_history, get_student_stats,
-    get_teacher_attendance_records, get_teacher_stats, get_all_attendance_for_export,
-    get_notifications_for_role, clear_attendance_history, init_db,
-    finalize_all_expired_sessions, get_latest_session_for_teacher, finalize_attendance_session,
-    get_current_time
+    get_teacher_attendance_records, get_teacher_stats, get_teacher_analytics,
+    get_all_attendance_for_export, get_notifications_for_role, add_notification,
+    clear_attendance_history, init_db, finalize_all_expired_sessions,
+    get_latest_session_for_teacher, finalize_attendance_session, get_current_time,
+    get_dynamic_qr_payload, calculate_distance_meters, DB_NAME
 )
 
 
 app = Flask(__name__)
-app.secret_key = 'supersecret_college_qr_key_2026'
+app.secret_key = os.getenv('SECRET_KEY', 'supersecret_college_qr_key_2026')
 
 # Ensure database is created on startup if missing
-if not os.path.exists('attendance.db'):
+if not os.path.exists(DB_NAME):
     init_db()
 
 # -------------------------------------------------------------
@@ -192,6 +193,7 @@ def student_scan_attendance():
     PROX-PREVENTION ATTENDANCE ENDPOINT:
     The student PID is STRICTLY fetched from the server session, NOT accepted from client request body.
     This guarantees that a student cannot mark attendance on behalf of someone else's PID.
+    Validates dynamic QR rotation and geofencing distance on Flask server.
     """
     if session.get('role') != 'student':
         return jsonify({"success": False, "error": "Unauthorized: Please log in as a student to mark attendance."}), 401
@@ -202,12 +204,15 @@ def student_scan_attendance():
 
     data = request.get_json(silent=True) or request.form
     session_token = data.get('session_token', '').strip()
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    accuracy = data.get('accuracy')
 
     if not session_token:
-        return jsonify({"success": False, "error": "Invalid scan: Attendance Session ID is missing."}), 400
+        return jsonify({"success": False, "error": "Invalid scan: Attendance Session ID or QR payload is missing."}), 400
 
-    # Call backend validation & recording engine
-    success, result = mark_qr_attendance(session_token, student_pid)
+    # Call backend validation & recording engine with geofence coordinates
+    success, result = mark_qr_attendance(session_token, student_pid, student_lat=latitude, student_lng=longitude, accuracy=accuracy)
 
     if success:
         return jsonify({
@@ -280,6 +285,7 @@ def teacher_dashboard():
             })
 
     stats = get_teacher_stats(teacher_name)
+    analytics = get_teacher_analytics(teacher_name)
     recent_records = get_teacher_attendance_records(teacher_name)
     notifications = get_notifications_for_role('teacher', teacher_id)
 
@@ -295,6 +301,7 @@ def teacher_dashboard():
         roster=roster,
         roster_data=roster_data,
         stats=stats,
+        analytics=analytics,
         recent_records=recent_records,
         students=students_list,
         notifications=notifications,
@@ -314,6 +321,10 @@ def teacher_start_attendance():
     data = request.get_json(silent=True) or request.form
     subject = data.get('subject', 'PLCA')
     duration = int(data.get('duration', 15))
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    radius_meters = data.get('radius_meters', 50)
+    geofence_enabled = data.get('geofence_enabled', 1)
 
     # Lookup subject code and teacher code
     timetable = get_full_weekly_timetable()
@@ -323,7 +334,7 @@ def teacher_start_attendance():
             subject_code = t['subject_code']
             break
 
-    # Create dynamic attendance session
+    # Create dynamic attendance session with geofencing reference point
     new_session = create_attendance_session(
         teacher_id=teacher_id,
         teacher_name=teacher['name'],
@@ -331,7 +342,11 @@ def teacher_start_attendance():
         subject_code=subject_code,
         class_name="Fourth Year B.E. ECS",
         division="A",
-        duration_minutes=duration
+        duration_minutes=duration,
+        latitude=latitude,
+        longitude=longitude,
+        radius_meters=radius_meters,
+        geofence_enabled=geofence_enabled
     )
 
     return jsonify({
@@ -452,17 +467,19 @@ def student_qr(pid):
     return send_file(buf, mimetype="image/png")
 
 @app.route('/session-qr/<session_token>')
+@app.route('/session-dynamic-qr/<session_token>')
 def session_qr(session_token):
     """
     Generates dynamic Temporary Attendance Session QR code.
-    Contains the session token required for students to mark attendance.
+    Expires and rotates every 25 seconds using server-side HMAC time windows.
     """
     sess = get_session_by_token(session_token)
     if not sess:
         return "Invalid session token", 404
 
-    # Structured QR payload
-    qr_payload = session_token
+    # Generate dynamic payload with rotating time-window signature
+    dynamic_info = get_dynamic_qr_payload(session_token)
+    qr_payload = dynamic_info['payload']
     
     qr = qrcode.QRCode(
         version=1,
@@ -478,7 +495,26 @@ def session_qr(session_token):
     img.save(buf)
     buf.seek(0)
 
-    return send_file(buf, mimetype="image/png")
+    response = send_file(buf, mimetype="image/png")
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
+@app.route('/api/session-dynamic-token/<session_token>')
+def api_session_dynamic_token(session_token):
+    """
+    Returns the current dynamic rotating QR token payload and countdown seconds
+    for real-time classroom projector synchronization.
+    """
+    sess = get_session_by_token(session_token)
+    if not sess:
+        return jsonify({"success": False, "error": "Session not found"}), 404
+
+    info = get_dynamic_qr_payload(session_token)
+    return jsonify({
+        "success": True,
+        "token_info": info
+    })
 
 # -------------------------------------------------------------
 # EXCEL EXPORT (.XLSX)
@@ -514,6 +550,7 @@ def export_attendance_excel():
     header_fill = PatternFill(start_color="171E19", end_color="171E19", fill_type="solid")
     alt_fill = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
     present_font = Font(name="Segoe UI", size=10, bold=True, color="008000")
+    absent_font = Font(name="Segoe UI", size=10, bold=True, color="C00000")
     
     thin_border = Border(
         left=Side(style='thin', color='CCCCCC'),
@@ -523,13 +560,13 @@ def export_attendance_excel():
     )
 
     # Header Title Block
-    ws.merge_cells('A1:M1')
+    ws.merge_cells('A1:N1')
     ws['A1'] = "COLLEGE OF ENGINEERING & TECHNOLOGY — DEPARTMENT OF ECS"
     ws['A1'].font = title_font
     ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 28
 
-    ws.merge_cells('A2:M2')
+    ws.merge_cells('A2:N2')
     export_sub = f"Official Attendance Report | Class: Fourth Year B.E. ECS (Div {division}) | Subject: {subject} | Generated: {get_current_time().strftime('%Y-%m-%d %H:%M:%S')}"
     ws['A2'] = export_sub
     ws['A2'].font = subtitle_font
@@ -539,11 +576,11 @@ def export_attendance_excel():
     # Blank spacer row
     ws.row_dimensions[3].height = 10
 
-    # Table Column Headers
+    # Table Column Headers (Includes Student Name, PID, Roll No., Subject, Date, Time, Status, Distance)
     headers = [
         "PID", "Student Name", "Roll Number", "Department", "Year",
         "Division", "Subject", "Teacher", "Date", "Day",
-        "Lecture Time", "Timestamp", "Status"
+        "Lecture Time", "Timestamp", "Status", "Geofence Distance"
     ]
     ws.row_dimensions[4].height = 24
 
@@ -556,6 +593,7 @@ def export_attendance_excel():
 
     # Data Rows
     for row_idx, r in enumerate(records, 5):
+        dist_str = f"{round(r['distance_meters'], 1)}m" if ('distance_meters' in r.keys() and r['distance_meters'] is not None) else ("Verified" if r['status'] == 'Present' else "-")
         row_values = [
             r['pid'],
             r['student_name'],
@@ -569,7 +607,8 @@ def export_attendance_excel():
             r['day'],
             r['lecture_time'],
             r['timestamp'],
-            r['status']
+            r['status'],
+            dist_str
         ]
         ws.row_dimensions[row_idx].height = 20
 
@@ -577,11 +616,11 @@ def export_attendance_excel():
         for col_num, val in enumerate(row_values, 1):
             cell = ws.cell(row=row_idx, column=col_num, value=val)
             cell.border = thin_border
-            cell.alignment = Alignment(horizontal="center" if col_num in [1, 3, 5, 6, 9, 10, 13] else "left", vertical="center")
+            cell.alignment = Alignment(horizontal="center" if col_num in [1, 3, 5, 6, 9, 10, 13, 14] else "left", vertical="center")
             if is_even:
                 cell.fill = alt_fill
             if col_num == 13: # Status column
-                cell.font = present_font
+                cell.font = present_font if r['status'] == 'Present' else absent_font
 
     # Auto-adjust column widths
     for col in ws.columns:
@@ -617,6 +656,64 @@ def api_timetable():
     else:
         lectures = [dict(r) for r in get_full_weekly_timetable()]
     return jsonify(lectures)
+
+@app.route('/favicon.ico')
+def favicon():
+    return ('', 204)
+
+# -------------------------------------------------------------
+# GLOBAL ERROR HANDLING (Railway Diagnostics)
+# -------------------------------------------------------------
+
+@app.errorhandler(500)
+@app.errorhandler(Exception)
+def handle_application_exception(e):
+    from werkzeug.exceptions import HTTPException
+    # Let standard HTTP exceptions (404, 401, 302, etc.) be handled normally
+    if isinstance(e, HTTPException) and e.code != 500:
+        return e
+
+    import traceback
+    import sys
+    tb = traceback.format_exc()
+    sys.stderr.write(f"\n==================== [AttendQR CRITICAL SERVER ERROR] ====================\n")
+    sys.stderr.write(f"Endpoint: {request.path} | Method: {request.method}\n")
+    sys.stderr.write(f"Error: {str(e)}\n")
+    sys.stderr.write(f"{tb}")
+    sys.stderr.write(f"===========================================================================\n")
+    sys.stderr.flush()
+
+    if request.path.startswith('/api') or request.is_json:
+        return jsonify({"success": False, "error": f"Internal Server Error: {str(e)}"}), 500
+
+    # User friendly recovery page
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Error | AttendQR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{ font-family: 'Segoe UI', system-ui, sans-serif; background: #fffbe6; padding: 2rem; color: #171e19; }}
+        .card {{ max-width: 600px; margin: 3rem auto; background: #fff; border: 3px solid #000; border-radius: 12px; box-shadow: 6px 6px 0 #000; padding: 2rem; }}
+        .btn {{ display: inline-block; padding: 0.6rem 1.2rem; background: #ffe17c; border: 2px solid #000; border-radius: 6px; font-weight: 800; text-decoration: none; color: #000; box-shadow: 2px 2px 0 #000; }}
+        .btn:hover {{ transform: translate(-2px, -2px); box-shadow: 4px 4px 0 #000; }}
+        pre {{ background: #f4f4f5; padding: 1rem; border: 1.5px solid #000; border-radius: 6px; font-size: 0.8rem; overflow-x: auto; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="margin-top:0; color:#c62828;">⚠️ Application Error</h2>
+        <p>A server error occurred while processing this page:</p>
+        <div style="background:#ffebee; border:1.5px solid #c62828; padding:0.75rem; border-radius:6px; font-weight:700; color:#b71c1c; margin-bottom:1rem;">
+            {e}
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <a href="/login" class="btn">↩ Return to Login</a>
+            <a href="javascript:location.reload()" class="btn" style="background:#fff;">🔄 Retry</a>
+        </div>
+    </div>
+</body>
+</html>""", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -2,8 +2,18 @@ import os
 import sqlite3
 import datetime
 import uuid
+import math
+import hmac
+import hashlib
+import time
 
-DB_NAME = 'attendance.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, 'attendance.db')
+SCHEMA_PATH = os.path.join(BASE_DIR, 'schema.sql')
+
+# Dynamic QR code rotation window (25 seconds) and HMAC signing secret
+DYNAMIC_QR_WINDOW = 25
+DYNAMIC_QR_SECRET = os.getenv('DYNAMIC_QR_SECRET', 'attendqr_dynamic_secret_2026_superkey')
 
 def get_current_time():
     """
@@ -19,13 +29,66 @@ def get_current_time():
         return datetime.datetime.now(ist).replace(tzinfo=None)
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=30000;")
+    except Exception:
+        pass
     return conn
+
+def migrate_db_schema():
+    """
+    Automatically alters existing SQLite database tables to include geofencing
+    and location verification columns if they do not already exist, preserving data.
+    """
+    if not os.path.exists(DB_NAME):
+        init_db()
+        return
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        tables = [r[0] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if 'students' not in tables or 'attendance_sessions' not in tables or 'attendance_records' not in tables:
+            conn.close()
+            init_db()
+            return
+
+        # 1. Update attendance_sessions
+        session_cols = [c[1] for c in cursor.execute('PRAGMA table_info(attendance_sessions)').fetchall()]
+        if 'latitude' not in session_cols:
+            cursor.execute('ALTER TABLE attendance_sessions ADD COLUMN latitude REAL')
+        if 'longitude' not in session_cols:
+            cursor.execute('ALTER TABLE attendance_sessions ADD COLUMN longitude REAL')
+        if 'radius_meters' not in session_cols:
+            cursor.execute('ALTER TABLE attendance_sessions ADD COLUMN radius_meters REAL DEFAULT 50.0')
+        if 'geofence_enabled' not in session_cols:
+            cursor.execute('ALTER TABLE attendance_sessions ADD COLUMN geofence_enabled INTEGER DEFAULT 1')
+
+        # 2. Update attendance_records
+        record_cols = [c[1] for c in cursor.execute('PRAGMA table_info(attendance_records)').fetchall()]
+        if 'student_lat' not in record_cols:
+            cursor.execute('ALTER TABLE attendance_records ADD COLUMN student_lat REAL')
+        if 'student_lng' not in record_cols:
+            cursor.execute('ALTER TABLE attendance_records ADD COLUMN student_lng REAL')
+        if 'distance_meters' not in record_cols:
+            cursor.execute('ALTER TABLE attendance_records ADD COLUMN distance_meters REAL')
+        if 'geofence_verified' not in record_cols:
+            cursor.execute('ALTER TABLE attendance_records ADD COLUMN geofence_verified INTEGER DEFAULT 1')
+
+        conn.commit()
+    except Exception as e:
+        print(f"Schema migration warning: {e}")
+    finally:
+        conn.close()
+
+# Run migration on module load
+migrate_db_schema()
 
 def init_db():
     conn = get_db_connection()
-    with open('schema.sql', 'r', encoding='utf-8') as f:
+    with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
         conn.executescript(f.read())
     conn.commit()
     conn.close()
@@ -33,6 +96,95 @@ def init_db():
 def seed_historical_attendance(conn):
     # No fake data: real attendance records only
     pass
+
+# ----------------- GEOFENCING & DYNAMIC QR UTILITIES -----------------
+
+def calculate_distance_meters(lat1, lon1, lat2, lon2):
+    """
+    Calculates geodesic distance between two GPS coordinates using the Haversine formula.
+    Returns distance in meters rounded to 2 decimal places.
+    """
+    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+        return None
+    try:
+        lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
+        R = 6371000.0  # Earth radius in meters
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+        a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        return round(R * c, 2)
+    except Exception as e:
+        print(f"Error calculating distance: {e}")
+        return None
+
+def get_dynamic_qr_payload(session_token, window_seconds=DYNAMIC_QR_WINDOW):
+    """
+    Generates a dynamic temporary QR code payload rotating every `window_seconds`.
+    Format: SESSION_TOKEN:DYNAMIC_HASH:WINDOW_INDEX
+    """
+    now_ts = int(time.time())
+    window_index = now_ts // window_seconds
+    seconds_remaining = window_seconds - (now_ts % window_seconds)
+
+    data = f"{session_token}:{window_index}".encode('utf-8')
+    dynamic_code = hmac.new(DYNAMIC_QR_SECRET.encode('utf-8'), data, hashlib.sha256).hexdigest()[:8].upper()
+    payload = f"{session_token}:{dynamic_code}:{window_index}"
+    return {
+        "payload": payload,
+        "session_token": session_token,
+        "dynamic_code": dynamic_code,
+        "window_index": window_index,
+        "seconds_remaining": seconds_remaining,
+        "window_seconds": window_seconds
+    }
+
+def validate_dynamic_qr_payload(scanned_payload, window_seconds=DYNAMIC_QR_WINDOW):
+    """
+    Validates dynamic QR code token.
+    Accepts:
+      1) Dynamic format: SESSION_TOKEN:DYNAMIC_CODE:WINDOW_INDEX
+      2) Direct session token: SESSION_TOKEN (for manual token fallback)
+    Returns (is_valid, session_token, error_message)
+    """
+    if not scanned_payload:
+        return False, None, "Invalid scan: Attendance Session ID is empty."
+
+    scanned_payload = scanned_payload.strip()
+    parts = scanned_payload.split(':')
+
+    if len(parts) == 3:
+        token, scanned_code, scanned_window_str = parts[0], parts[1], parts[2]
+        try:
+            scanned_window = int(scanned_window_str)
+        except ValueError:
+            return False, token, "Invalid dynamic QR code structure."
+
+        current_ts = int(time.time())
+        current_window = current_ts // window_seconds
+
+        # Allow current window and previous window (grace period for network/scan lag)
+        valid_windows = [current_window, current_window - 1]
+
+        if scanned_window not in valid_windows:
+            return False, token, "QR Code expired. Please scan the newly refreshed QR code displayed on the screen."
+
+        expected_data = f"{token}:{scanned_window}".encode('utf-8')
+        expected_code = hmac.new(DYNAMIC_QR_SECRET.encode('utf-8'), expected_data, hashlib.sha256).hexdigest()[:8].upper()
+
+        if not hmac.compare_digest(scanned_code.upper(), expected_code):
+            return False, token, "Invalid QR security signature. Please scan the current lecture QR."
+
+        return True, token, None
+
+    elif len(parts) == 1:
+        # Fallback to direct token if teacher provided code or student entered manually
+        token = parts[0]
+        return True, token, None
+
+    return False, None, "Unrecognized QR code format."
 
 # ----------------- STUDENT OPERATIONS -----------------
 
@@ -197,7 +349,7 @@ def get_current_active_lecture(now=None):
 
 # ----------------- ATTENDANCE SESSION MANAGEMENT -----------------
 
-def create_attendance_session(teacher_id, teacher_name, subject, subject_code, class_name, division, start_time=None, end_time=None, duration_minutes=15):
+def create_attendance_session(teacher_id, teacher_name, subject, subject_code, class_name, division, start_time=None, end_time=None, duration_minutes=15, latitude=None, longitude=None, radius_meters=50.0, geofence_enabled=1):
     now = get_current_time()
     date_str = now.strftime('%Y-%m-%d')
     start_time_str = start_time or now.strftime('%I:%M %p')
@@ -206,6 +358,12 @@ def create_attendance_session(teacher_id, teacher_name, subject, subject_code, c
     expires_at = now + datetime.timedelta(minutes=duration_minutes)
     expires_at_str = expires_at.strftime('%Y-%m-%d %H:%M:%S')
     end_time_str = end_time or expires_at.strftime('%I:%M %p')
+
+    # Parse and validate geofence parameters
+    lat_val = float(latitude) if latitude is not None and str(latitude).strip() != '' else None
+    lng_val = float(longitude) if longitude is not None and str(longitude).strip() != '' else None
+    radius_val = float(radius_meters) if radius_meters is not None and str(radius_meters).strip() != '' else 50.0
+    geo_enabled_val = 1 if (geofence_enabled and lat_val is not None and lng_val is not None) else 0
 
     # Generate unique secure session token
     session_token = f"ATT-{uuid.uuid4().hex[:12].upper()}"
@@ -222,13 +380,22 @@ def create_attendance_session(teacher_id, teacher_name, subject, subject_code, c
 
     cursor.execute('''
         INSERT INTO attendance_sessions 
-        (session_token, teacher_id, teacher_name, subject, subject_code, class_name, division, date, start_time, end_time, expires_at, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-    ''', (session_token, teacher_id, teacher_name, subject, subject_code, class_name, division, date_str, start_time_str, end_time_str, expires_at_str))
+        (session_token, teacher_id, teacher_name, subject, subject_code, class_name, division, date, start_time, end_time, expires_at, status, latitude, longitude, radius_meters, geofence_enabled)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+    ''', (session_token, teacher_id, teacher_name, subject, subject_code, class_name, division, date_str, start_time_str, end_time_str, expires_at_str, lat_val, lng_val, radius_val, geo_enabled_val))
     
     session_id = cursor.lastrowid
     conn.commit()
     conn.close()
+
+    # Functional notification for students
+    loc_info = f" (Geofence: {int(radius_val)}m)" if geo_enabled_val else ""
+    add_notification(
+        target_role='student',
+        title=f"Attendance Started: {subject}",
+        message=f"{teacher_name} initiated attendance for {subject} (Div {division}){loc_info}. Scan live QR now.",
+        type='info'
+    )
 
     return {
         "id": session_id,
@@ -243,7 +410,11 @@ def create_attendance_session(teacher_id, teacher_name, subject, subject_code, c
         "start_time": start_time_str,
         "end_time": end_time_str,
         "expires_at": expires_at_str,
-        "status": "active"
+        "status": "active",
+        "latitude": lat_val,
+        "longitude": lng_val,
+        "radius_meters": radius_val,
+        "geofence_enabled": geo_enabled_val
     }
 
 def get_session_by_token(session_token):
@@ -367,33 +538,40 @@ def get_active_session_for_teacher(teacher_id):
 
 # ----------------- QR ATTENDANCE VALIDATION & RECORDING -----------------
 
-def mark_qr_attendance(session_token, student_pid):
+def mark_qr_attendance(session_token_or_payload, student_pid, student_lat=None, student_lng=None, accuracy=None):
     """
     Validates and marks attendance for an authenticated student.
     Validation steps:
-      1. Authenticated student exists in DB
-      2. Session exists
-      3. Session is active
-      4. Session is not expired
+      1. Dynamic QR validity (time window expiration and cryptographic signature)
+      2. Authenticated student exists in DB
+      3. Session exists and is active & not expired
+      4. Geofencing: Verifies student GPS is within teacher's allowed classroom radius
       5. Student class and division match session
-      6. Student has not already marked attendance for this session / lecture
+      6. Duplicate prevention per session
+      7. Record verified attendance with GPS coordinates & distance
+      8. Issue real-time functional notifications
     """
+    # Step 1: Validate Dynamic QR Payload
+    is_valid_qr, session_token, qr_err = validate_dynamic_qr_payload(session_token_or_payload)
+    if not is_valid_qr:
+        return False, qr_err
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Step 1: Validate Student
+    # Step 2: Validate Student
     student = cursor.execute('SELECT * FROM students WHERE pid = ?', (student_pid,)).fetchone()
     if not student:
         conn.close()
         return False, "Invalid Student: Student PID not registered in database."
 
-    # Step 2: Validate Session
+    # Step 3: Validate Session
     session_row = cursor.execute('SELECT * FROM attendance_sessions WHERE session_token = ?', (session_token,)).fetchone()
     if not session_row:
         conn.close()
         return False, "Invalid attendance session: QR code not recognized."
 
-    # Step 3 & 4: Check Session Status and Expiration
+    # Check Session Status and Expiration
     if session_row['status'] != 'active':
         conn.close()
         return False, f"Attendance session is {session_row['status']}. Attendance is closed."
@@ -406,8 +584,59 @@ def mark_qr_attendance(session_token, student_pid):
         conn.close()
         return False, "Attendance session has expired. Please ask the teacher to refresh the QR code."
 
+    # Step 4: Geofencing Verification (Backend Distance Calculation)
+    geo_enabled = bool(session_row['geofence_enabled']) if 'geofence_enabled' in session_row.keys() else False
+    teacher_lat = session_row['latitude'] if 'latitude' in session_row.keys() else None
+    teacher_lng = session_row['longitude'] if 'longitude' in session_row.keys() else None
+    allowed_radius = float(session_row['radius_meters']) if ('radius_meters' in session_row.keys() and session_row['radius_meters'] is not None) else 50.0
+
+    distance = None
+    student_lat_val = None
+    student_lng_val = None
+
+    if geo_enabled and teacher_lat is not None and teacher_lng is not None:
+        if student_lat is None or student_lng is None or str(student_lat).strip() == '' or str(student_lng).strip() == '':
+            conn.close()
+            return False, "GPS Location Required: Classroom geofencing is enabled for this lecture. Please enable GPS/Location on your device to mark attendance."
+
+        try:
+            student_lat_val = float(student_lat)
+            student_lng_val = float(student_lng)
+            teacher_lat_val = float(teacher_lat)
+            teacher_lng_val = float(teacher_lng)
+        except (ValueError, TypeError):
+            conn.close()
+            return False, "Invalid GPS coordinates received from your device."
+
+        distance = calculate_distance_meters(teacher_lat_val, teacher_lng_val, student_lat_val, student_lng_val)
+
+        if distance is None:
+            conn.close()
+            return False, "Unable to compute location distance."
+
+        # Reject if outside allowed radius
+        if distance > allowed_radius:
+            conn.close()
+            # Functional notification for rejected attendance
+            add_notification(
+                target_role='student',
+                target_id=student_pid,
+                title='Attendance Rejected (Outside Geofence)',
+                message=f"Attendance for {session_row['subject']} rejected: You were {round(distance, 1)}m away from classroom (Allowed: {int(allowed_radius)}m).",
+                type='danger'
+            )
+            return False, f"Location verification failed: You are {round(distance, 1)}m away from the classroom (Maximum allowed: {int(allowed_radius)}m)."
+    else:
+        if student_lat is not None and student_lng is not None:
+            try:
+                student_lat_val = float(student_lat)
+                student_lng_val = float(student_lng)
+                if teacher_lat is not None and teacher_lng is not None:
+                    distance = calculate_distance_meters(float(teacher_lat), float(teacher_lng), student_lat_val, student_lng_val)
+            except Exception:
+                pass
+
     # Step 5: Class and Division Verification
-    # Student must belong to same class/division
     if student['division'].upper() != session_row['division'].upper():
         conn.close()
         return False, f"Wrong class/division: Student is in Division {student['division']} but session is for Division {session_row['division']}."
@@ -421,16 +650,27 @@ def mark_qr_attendance(session_token, student_pid):
         if existing['status'] == 'Present':
             conn.close()
             return False, "Attendance already marked! Duplicate submission prevented."
-        # If student was marked Absent by timeout/re-open, allow them to mark Present now:
+        # If student was marked Absent previously, update to Present
         day_name = now.strftime('%A')
         timestamp_str = now.strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute('''
             UPDATE attendance_records 
-            SET status = 'Present', timestamp = ?
+            SET status = 'Present', timestamp = ?, student_lat = ?, student_lng = ?, distance_meters = ?, geofence_verified = 1
             WHERE session_id = ? AND pid = ?
-        ''', (timestamp_str, session_row['id'], student['pid']))
+        ''', (timestamp_str, student_lat_val, student_lng_val, distance, session_row['id'], student['pid']))
         conn.commit()
         conn.close()
+
+        # Success notification
+        dist_text = f" ({round(distance, 1)}m from teacher)" if distance is not None else ""
+        add_notification(
+            target_role='student',
+            target_id=student_pid,
+            title='Attendance Marked Present',
+            message=f"Attendance updated to Present for {session_row['subject']}{dist_text}.",
+            type='success'
+        )
+
         return True, {
             "record_id": existing['id'],
             "pid": student['pid'],
@@ -440,9 +680,9 @@ def mark_qr_attendance(session_token, student_pid):
             "teacher": session_row['teacher_name'],
             "date": session_row['date'],
             "timestamp": timestamp_str,
-            "status": "Present"
+            "status": "Present",
+            "distance_meters": distance
         }
-
 
     # Step 7: Record Attendance
     day_name = now.strftime('%A')
@@ -451,15 +691,26 @@ def mark_qr_attendance(session_token, student_pid):
 
     cursor.execute('''
         INSERT INTO attendance_records 
-        (session_id, session_token, pid, student_name, roll_number, department, year, division, subject, teacher_name, date, day, lecture_time, timestamp, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Present')
+        (session_id, session_token, pid, student_name, roll_number, department, year, division, subject, teacher_name, date, day, lecture_time, timestamp, status, student_lat, student_lng, distance_meters, geofence_verified)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Present', ?, ?, ?, 1)
     ''', (session_row['id'], session_token, student['pid'], student['name'], student['roll_number'],
           student['department'], student['year'], student['division'], session_row['subject'],
-          session_row['teacher_name'], session_row['date'], day_name, lecture_time, timestamp_str))
+          session_row['teacher_name'], session_row['date'], day_name, lecture_time, timestamp_str,
+          student_lat_val, student_lng_val, distance))
     
     record_id = cursor.lastrowid
     conn.commit()
     conn.close()
+
+    # Functional notification for successful attendance
+    dist_text = f" (Verified inside {int(allowed_radius)}m zone, actual: {round(distance, 1)}m)" if distance is not None else ""
+    add_notification(
+        target_role='student',
+        target_id=student_pid,
+        title='Attendance Verified ✓',
+        message=f"Attendance successfully recorded for {session_row['subject']}{dist_text}.",
+        type='success'
+    )
 
     return True, {
         "record_id": record_id,
@@ -470,7 +721,8 @@ def mark_qr_attendance(session_token, student_pid):
         "teacher": session_row['teacher_name'],
         "date": session_row['date'],
         "timestamp": timestamp_str,
-        "status": "Present"
+        "status": "Present",
+        "distance_meters": distance
     }
 
 # ----------------- LIVE ATTENDANCE & STATS -----------------
@@ -541,22 +793,45 @@ def get_student_attendance_history(pid):
     conn.close()
     return records
 
+def check_and_notify_shortage(student_pid, overall_percentage):
+    """
+    Checks if a student with attendance shortage (<75%) needs a notification,
+    preventing duplicate notification spam on every reload.
+    """
+    conn = get_db_connection()
+    today_str = get_current_time().strftime('%Y-%m-%d')
+    existing = conn.execute('''
+        SELECT id FROM notifications 
+        WHERE target_id = ? AND title LIKE '%Shortage%' AND created_at LIKE ?
+    ''', (student_pid, f"{today_str}%")).fetchone()
+    conn.close()
+
+    if not existing:
+        add_notification(
+            target_role='student',
+            target_id=student_pid,
+            title='⚠️ Attendance Shortage Alert',
+            message=f"Your current overall attendance is {overall_percentage}%, which is below the mandatory 75% threshold. Please attend all upcoming lectures.",
+            type='warning'
+        )
+
 def get_student_stats(pid):
     conn = get_db_connection()
     
     # All present records for this student
     attended_records = conn.execute("SELECT * FROM attendance_records WHERE pid = ? AND status = 'Present'", (pid,)).fetchall()
     
-    # Total sessions held for Division A
+    # Total distinct sessions held for Division A
     total_sessions = conn.execute('''
         SELECT COUNT(DISTINCT id) FROM attendance_sessions 
-        WHERE division = 'A' AND (status = 'closed' OR status = 'expired')
+        WHERE division = 'A' AND (status = 'closed' OR status = 'expired' OR id IN (SELECT DISTINCT session_id FROM attendance_records))
     ''').fetchone()[0]
     
     # All official subjects
     subjects = conn.execute('SELECT * FROM subjects ORDER BY code ASC').fetchall()
     
     subject_stats = []
+    shortage_subjects = []
     for sub in subjects:
         sub_code = sub['code']
         # Count total sessions for this subject
@@ -571,10 +846,16 @@ def get_student_stats(pid):
             WHERE pid = ? AND (subject = ? OR subject LIKE ?) AND status = 'Present'
         ''', (pid, sub_code, f"{sub_code}%")).fetchone()[0]
 
-        # Use realistic baseline if newly created
-        total_held = max(sub_total_sessions, attended_count, 1)
-        pct = round((attended_count / total_held) * 100, 1)
+        total_held = max(sub_total_sessions, attended_count)
+        if total_held > 0:
+            pct = round((attended_count / total_held) * 100, 1)
+        else:
+            pct = 100.0  # No sessions held yet for this subject
         
+        is_eligible = pct >= 75.0
+        if total_held > 0 and not is_eligible:
+            shortage_subjects.append(sub_code)
+
         subject_stats.append({
             "code": sub_code,
             "name": sub['name'],
@@ -584,26 +865,37 @@ def get_student_stats(pid):
             "attended": attended_count,
             "total": total_held,
             "percentage": pct,
-            "eligible": pct >= 75.0
+            "eligible": is_eligible
         })
 
     conn.close()
 
     total_attended = len(attended_records)
-    total_classes = max(total_sessions, total_attended, 1) if total_sessions > 0 or total_attended > 0 else 0
-    overall_percentage = round((total_attended / total_classes) * 100, 1) if total_classes > 0 else 0.0
+    total_classes = max(total_sessions, total_attended)
+    if total_classes > 0:
+        overall_percentage = round((total_attended / total_classes) * 100, 1)
+    else:
+        overall_percentage = 100.0  # Brand new semester / 0 sessions held
+
     total_absent = max(0, total_classes - total_attended)
+    has_shortage = (total_classes >= 1 and overall_percentage < 75.0)
+
+    # Automatically trigger shortage warning notification for student
+    if has_shortage:
+        check_and_notify_shortage(pid, overall_percentage)
 
     return {
         "total_attended": total_attended,
         "total_classes": total_classes,
         "total_absent": total_absent,
         "overall_percentage": overall_percentage,
+        "has_shortage": has_shortage,
+        "shortage_subjects": shortage_subjects,
         "subject_breakdowns": subject_stats,
         "subject_stats": subject_stats
     }
 
-# ----------------- TEACHER METRICS & REPORTS -----------------
+# ----------------- TEACHER METRICS, ANALYTICS & REPORTS -----------------
 
 def get_teacher_attendance_records(teacher_name, subject=None, date=None):
     conn = get_db_connection()
@@ -644,6 +936,131 @@ def get_teacher_stats(teacher_name):
         "average_attendance": avg_pct
     }
 
+def get_teacher_analytics(teacher_name=None, division='A'):
+    """
+    Comprehensive real database analytics:
+    - Overall attendance %
+    - Subject-wise attendance breakdown
+    - Present / Absent counts
+    - Attendance trend across recent sessions
+    - Low-attendance students (<75%)
+    """
+    conn = get_db_connection()
+
+    # 1. Total sessions held for division (with records or closed/expired)
+    sessions_query = "SELECT * FROM attendance_sessions WHERE division = ? AND (status IN ('closed', 'expired') OR id IN (SELECT DISTINCT session_id FROM attendance_records))"
+    params = [division]
+    if teacher_name:
+        sessions_query += " AND teacher_name LIKE ?"
+        params.append(f"%{teacher_name}%")
+    sessions_query += " ORDER BY date DESC, start_time DESC"
+    sessions = conn.execute(sessions_query, params).fetchall()
+
+    total_sessions = len(sessions)
+    session_ids = [s['id'] for s in sessions]
+
+    # 2. Total enrolled students in division
+    enrolled_students = conn.execute("SELECT * FROM students WHERE division = ? ORDER BY CAST(roll_number AS INTEGER) ASC, roll_number ASC", (division,)).fetchall()
+    total_enrolled = len(enrolled_students)
+
+    # 3. Overall attendance counts
+    if session_ids:
+        placeholders = ','.join('?' * len(session_ids))
+        total_present = conn.execute(f"SELECT COUNT(*) FROM attendance_records WHERE session_id IN ({placeholders}) AND status = 'Present'", session_ids).fetchone()[0]
+        total_absent = conn.execute(f"SELECT COUNT(*) FROM attendance_records WHERE session_id IN ({placeholders}) AND status = 'Absent'", session_ids).fetchone()[0]
+    else:
+        total_present = 0
+        total_absent = 0
+
+    total_expected = total_sessions * total_enrolled
+    overall_attendance_pct = round((total_present / total_expected * 100), 1) if total_expected > 0 else 0.0
+
+    # 4. Subject-wise attendance breakdown
+    subjects = conn.execute("SELECT * FROM subjects ORDER BY code ASC").fetchall()
+    subject_analytics = []
+    for sub in subjects:
+        sub_code = sub['code']
+        sub_sess_q = "SELECT id FROM attendance_sessions WHERE (subject = ? OR subject_code = ?) AND division = ?"
+        sub_params = [sub_code, sub_code, division]
+        if teacher_name:
+            sub_sess_q += " AND teacher_name LIKE ?"
+            sub_params.append(f"%{teacher_name}%")
+        sub_sess_ids = [r['id'] for r in conn.execute(sub_sess_q, sub_params).fetchall()]
+        sub_total_sess = len(sub_sess_ids)
+
+        if sub_sess_ids:
+            sub_placeholders = ','.join('?' * len(sub_sess_ids))
+            sub_present = conn.execute(f"SELECT COUNT(*) FROM attendance_records WHERE session_id IN ({sub_placeholders}) AND status = 'Present'", sub_sess_ids).fetchone()[0]
+            sub_absent = conn.execute(f"SELECT COUNT(*) FROM attendance_records WHERE session_id IN ({sub_placeholders}) AND status = 'Absent'", sub_sess_ids).fetchone()[0]
+        else:
+            sub_present = 0
+            sub_absent = 0
+
+        sub_expected = sub_total_sess * total_enrolled
+        sub_turnout_pct = round((sub_present / sub_expected * 100), 1) if sub_expected > 0 else 0.0
+
+        subject_analytics.append({
+            "code": sub_code,
+            "name": sub['name'],
+            "faculty": sub['teacher_name'],
+            "total_sessions": sub_total_sess,
+            "present_count": sub_present,
+            "absent_count": sub_absent,
+            "turnout_pct": sub_turnout_pct,
+            "status": "Healthy" if sub_turnout_pct >= 75.0 else ("Low" if sub_total_sess > 0 else "Pending")
+        })
+
+    # 5. Attendance Trend (Last 7 sessions)
+    trend = []
+    for s in sessions[:7]:
+        s_id = s['id']
+        s_present = conn.execute("SELECT COUNT(*) FROM attendance_records WHERE session_id = ? AND status = 'Present'", (s_id,)).fetchone()[0]
+        s_turnout = round((s_present / total_enrolled * 100), 1) if total_enrolled > 0 else 0.0
+        trend.append({
+            "session_id": s_id,
+            "date": s['date'],
+            "time": s['start_time'],
+            "subject": s['subject'],
+            "present_count": s_present,
+            "total_enrolled": total_enrolled,
+            "turnout_pct": s_turnout
+        })
+    trend.reverse()
+
+    # 6. Low-Attendance Students (< 75%)
+    low_attendance_students = []
+    for s in enrolled_students:
+        s_pid = s['pid']
+        s_stats = get_student_stats(s_pid)
+        if s_stats['total_classes'] > 0 and s_stats['overall_percentage'] < 75.0:
+            shortage_subs = [sub['subject'] for sub in s_stats['subject_breakdowns'] if sub['total'] > 0 and sub['percentage'] < 75.0]
+            classes_needed = max(1, int(math.ceil(3 * s_stats['total_classes'] - 4 * s_stats['total_attended'])))
+            low_attendance_students.append({
+                "pid": s_pid,
+                "name": s['name'],
+                "roll_number": s['roll_number'],
+                "department": s['department'],
+                "total_attended": s_stats['total_attended'],
+                "total_classes": s_stats['total_classes'],
+                "overall_percentage": s_stats['overall_percentage'],
+                "classes_needed": classes_needed,
+                "shortage_subjects": shortage_subs
+            })
+
+    conn.close()
+
+    return {
+        "overall_percentage": overall_attendance_pct,
+        "total_sessions": total_sessions,
+        "total_enrolled": total_enrolled,
+        "total_present": total_present,
+        "total_absent": total_absent,
+        "subject_analytics": subject_analytics,
+        "trend": trend,
+        "low_attendance_students": low_attendance_students,
+        "shortage_count": len(low_attendance_students)
+    }
+
 
 # ----------------- EXPORT TO EXCEL QUERIES -----------------
 
@@ -668,6 +1085,23 @@ def get_all_attendance_for_export(subject=None, date=None, class_name=None, divi
     return records
 
 # ----------------- NOTIFICATIONS -----------------
+
+def add_notification(target_role, title, message, target_id=None, type='info'):
+    """
+    Inserts a functional notification into the notifications table.
+    target_role: 'all', 'student', 'teacher'
+    type: 'info', 'success', 'warning', 'danger'
+    """
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO notifications (target_role, target_id, title, message, type)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (target_role, target_id, title, message, type))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error adding notification: {e}")
 
 def get_notifications_for_role(role, target_id=None):
     conn = get_db_connection()

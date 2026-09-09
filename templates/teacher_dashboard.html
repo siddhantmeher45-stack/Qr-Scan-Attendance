@@ -49,7 +49,7 @@
                 <div>
                     <strong>🔔 {{ n['title'] }}:</strong> <span style="font-size:0.9rem; color:#333;">{{ n['message'] }}</span>
                 </div>
-                <span style="font-size:0.72rem; color:#777;">{{ n['created_at'].split(' ')[0] }}</span>
+                <span style="font-size:0.72rem; color:#777;">{{ (n['created_at'].split(' ')[0]) if (n['created_at'] and ' ' in n['created_at']) else (n['created_at'] or '') }}</span>
             </div>
             {% endfor %}
         </div>
@@ -133,7 +133,7 @@
                         <div style="font-size:0.85rem; color:#222; margin-top:0.25rem;">
                             Token: <code id="active-session-token" style="background:#fff; padding:0.15rem 0.5rem; border:1px solid #000; border-radius:4px; font-weight:800;">{{ active_session['session_token'] if active_session else '' }}</code>
                             | Class: <strong>Fourth Year B.E. ECS (Div A)</strong>
-                            | Expires at: <span id="active-session-expiry">{{ active_session['expires_at'].split(' ')[1] if active_session else '' }}</span>
+                            | Expires at: <span id="active-session-expiry">{{ (active_session['expires_at'].split(' ')[1]) if (active_session and active_session['expires_at'] and ' ' in active_session['expires_at']) else (active_session['expires_at'] if active_session else '') }}</span>
                         </div>
                     </div>
                 </div>
@@ -260,6 +260,169 @@
 
         </div>
 
+        <!-- ── Attendance Analytics & Shortage Monitor ── -->
+        <div class="resp-grid-2" style="margin-bottom:1.5rem;">
+            
+            <!-- Attendance Analytics & Subject Breakdown Card -->
+            <div class="nb-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                        <h2 style="margin:0; font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:0.4rem;">
+                            <span>📊</span> Class Attendance Analytics
+                        </h2>
+                        <span class="badge {% if analytics['overall_percentage'] >= 75 %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ analytics['overall_percentage'] }}% Overall Turnout
+                        </span>
+                    </div>
+
+                    <!-- Quick Aggregates Grid -->
+                    <div class="resp-grid-3" style="margin-bottom:1rem; display:grid; grid-template-columns: repeat(3, 1fr); gap:0.5rem;">
+                        <div style="background:#fff; border:2px solid #000; border-radius:6px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.7rem; font-weight:700; color:#555;">Total Sessions</div>
+                            <div style="font-size:1.25rem; font-weight:800;">{{ analytics['total_sessions'] }}</div>
+                        </div>
+                        <div style="background:#e8f5e9; border:2px solid #000; border-radius:6px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.7rem; font-weight:700; color:#2e7d32;">Total Present</div>
+                            <div style="font-size:1.25rem; font-weight:800; color:#2e7d32;">{{ analytics['total_present'] }}</div>
+                        </div>
+                        <div style="background:#ffebee; border:2px solid #000; border-radius:6px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.7rem; font-weight:700; color:#c62828;">Total Absent</div>
+                            <div style="font-size:1.25rem; font-weight:800; color:#c62828;">{{ analytics['total_absent'] }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Subject-Wise Breakdown Table -->
+                    <div style="font-size:0.8rem; font-weight:800; margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.04em;">Subject-Wise Performance</div>
+                    <div class="table-wrap" style="max-height:180px; overflow-y:auto; margin-bottom:1rem;">
+                        <table class="nb-table" style="font-size:0.8rem;">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Sessions</th>
+                                    <th>Present</th>
+                                    <th>Turnout</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in analytics['subject_analytics'] %}
+                                <tr>
+                                    <td><strong>{{ sub['code'] }}</strong></td>
+                                    <td>{{ sub['total_sessions'] }}</td>
+                                    <td><span style="color:#2e7d32; font-weight:700;">{{ sub['present_count'] }}</span></td>
+                                    <td><strong>{{ sub['turnout_pct'] }}%</strong></td>
+                                    <td>
+                                        {% if sub['total_sessions'] == 0 %}
+                                        <span class="badge" style="background:#f4f4f5; border:1px solid #000; font-size:0.7rem;">No Sessions</span>
+                                        {% elif sub['turnout_pct'] >= 75 %}
+                                        <span class="badge badge-success" style="font-size:0.7rem;">Healthy</span>
+                                        {% else %}
+                                        <span class="badge badge-danger" style="font-size:0.7rem;">Low (&lt;75%)</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Attendance Trend -->
+                    {% if analytics['trend'] %}
+                    <div style="font-size:0.8rem; font-weight:800; margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.04em;">Recent Sessions Turnout Trend</div>
+                    <div style="display:flex; gap:0.4rem; overflow-x:auto; padding-bottom:0.25rem;">
+                        {% for t in analytics['trend'] %}
+                        <div style="background:#f9f9fa; border:1.5px solid #000; border-radius:6px; padding:0.4rem 0.6rem; min-width:110px; text-align:center; font-size:0.75rem;">
+                            <div style="font-weight:800; color:#000;">{{ t['subject'] }}</div>
+                            <div style="font-size:0.68rem; color:#666;">{{ (t['date'].split('-')[1] ~ '/' ~ t['date'].split('-')[2]) if (t['date'] and '-' in t['date'] and t['date'].split('-')|length >= 3) else (t['date'] or '') }}</div>
+                            {% if t['turnout_pct'] >= 75 %}
+                            <div style="font-weight:800; color:#2e7d32; font-size:0.85rem;">{{ t['turnout_pct'] }}%</div>
+                            {% else %}
+                            <div style="font-weight:800; color:#c62828; font-size:0.85rem;">{{ t['turnout_pct'] }}%</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attendance Shortage Monitor Card (< 75%) -->
+            <div class="nb-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+                        <h2 style="margin:0; font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:0.4rem;">
+                            <span>⚠️</span> Attendance Shortage Register
+                        </h2>
+                        {% if analytics['shortage_count'] > 0 %}
+                        <span class="badge badge-danger" style="font-weight:800;">
+                            {{ analytics['shortage_count'] }} Student{% if analytics['shortage_count'] > 1 %}s{% endif %} &lt; 75%
+                        </span>
+                        {% else %}
+                        <span class="badge badge-success">
+                            ✓ Zero Shortages
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p style="margin:0 0 0.85rem 0; font-size:0.8rem; color:#555;">
+                        Students with overall attendance below 75% requiring urgent warning as per college regulations.
+                    </p>
+
+                    {% if analytics['low_attendance_students'] %}
+                    <div class="table-wrap" style="max-height:310px; overflow-y:auto;">
+                        <table class="nb-table" style="font-size:0.8rem;">
+                            <thead>
+                                <tr>
+                                    <th>Roll</th>
+                                    <th>PID</th>
+                                    <th>Student Name</th>
+                                    <th>Attended</th>
+                                    <th>Overall %</th>
+                                    <th>Shortage Alert</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in analytics['low_attendance_students'] %}
+                                <tr style="background:#fff5f5;">
+                                    <td><strong>{{ s['roll_number'] }}</strong></td>
+                                    <td><code>{{ s['pid'] }}</code></td>
+                                    <td><span style="font-weight:700;">{{ s['name'] }}</span></td>
+                                    <td>{{ s['total_attended'] }} / {{ s['total_classes'] }}</td>
+                                    <td>
+                                        <span class="badge badge-danger" style="font-weight:800;">
+                                            {{ s['overall_percentage'] }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style="font-size:0.72rem; color:#c62828; font-weight:700;">
+                                            Need +{{ s['classes_needed'] }} lec for 75%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="padding:2.5rem 1rem; text-align:center; background:#f9fdf9; border:2px dashed #2e7d32; border-radius:8px; color:#1b5e20;">
+                        <div style="font-size:2rem; margin-bottom:0.3rem;">🎓 ✓</div>
+                        <strong style="font-size:0.95rem; display:block; margin-bottom:0.2rem;">Good Standing</strong>
+                        <span style="font-size:0.8rem; color:#444;">
+                            {% if analytics['total_sessions'] == 0 %}
+                            No closed attendance sessions yet. Shortage metrics will update automatically after lectures.
+                            {% else %}
+                            All enrolled students currently maintain attendance at or above the 75% eligibility threshold!
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div style="font-size:0.72rem; color:#666; margin-top:0.75rem; border-top:1px dashed #ccc; padding-top:0.5rem;">
+                    📌 Mandatory Threshold: Minimum 75% attendance is required for Fourth Year B.E. ECS (Division A).
+                </div>
+            </div>
+
+        </div>
+
         <!-- ── Live Student Attendance Feed & Roster ── -->
         <div class="nb-card" style="margin-bottom:1.5rem;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
@@ -308,7 +471,7 @@
                             <td><span class="badge" style="background:#f4f4f5; border:1px solid #000;">{{ s['division'] }}</span></td>
                             <td class="scan-time">
                                 {% if s['status'] == 'Present' and s['timestamp'] != '-' %}
-                                <code>{{ s['timestamp'].split(' ')[1] if ' ' in s['timestamp'] else s['timestamp'] }}</code>
+                                <code>{{ (s['timestamp'].split(' ')[1]) if (s['timestamp'] and ' ' in s['timestamp']) else (s['timestamp'] or '-') }}</code>
                                 {% else %}
                                 -
                                 {% endif %}
@@ -380,7 +543,7 @@
                             <td><code>{{ r['pid'] }}</code></td>
                             <td>{{ r['student_name'] }}</td>
                             <td>{{ r['roll_number'] }}</td>
-                            <td><code style="font-size:0.78rem;">{{ r['timestamp'].split(' ')[1] if ' ' in r['timestamp'] else r['timestamp'] }}</code></td>
+                            <td><code style="font-size:0.78rem;">{{ (r['timestamp'].split(' ')[1]) if (r['timestamp'] and ' ' in r['timestamp']) else (r['timestamp'] or '-') }}</code></td>
                             <td>
                                 {% if r['status'] == 'Present' %}
                                 <span class="badge badge-success">✓ Present</span>
@@ -425,7 +588,7 @@
                 <div class="input-group" style="margin-bottom:1rem;">
                     <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">Select Subject *</label>
                     <select id="session-subject-select" style="width:100%; padding:0.7rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700;">
-                        {% for sub in teacher['subjects'].split(',') %}
+                        {% for sub in (teacher['subjects'].split(',') if teacher['subjects'] else ['PLCA', 'DL', 'ND', 'DICD', 'BCD']) %}
                         {% set s = sub.strip() %}
                         <option value="{{ s }}" {% if current_lecture and current_lecture['subject'] == s %}selected{% endif %}>{{ s }}</option>
                         {% endfor %}
@@ -445,7 +608,7 @@
                     </div>
                 </div>
 
-                <div class="input-group" style="margin-bottom:1.5rem;">
+                <div class="input-group" style="margin-bottom:1rem;">
                     <label style="display:block; font-weight:700; margin-bottom:0.3rem; font-size:0.85rem;">QR Session Expiry Duration</label>
                     <select id="session-duration" style="width:100%; padding:0.7rem; border:2px solid #000; border-radius:6px; font-family:inherit;">
                         <option value="5">5 Minutes (Strict Quick Attendance)</option>
@@ -453,6 +616,41 @@
                         <option value="15" selected>15 Minutes (Recommended)</option>
                         <option value="30">30 Minutes (Full Lecture Window)</option>
                     </select>
+                </div>
+
+                <!-- 📍 Classroom Geofencing Setup -->
+                <div style="background:#f9f9fa; border:2px solid #000; border-radius:8px; padding:0.85rem; margin-bottom:1.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                        <label style="font-weight:800; font-size:0.85rem; display:flex; align-items:center; gap:0.35rem;">
+                            <span>📍</span> Classroom Geofencing
+                        </label>
+                        <label style="font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                            <input type="checkbox" id="session-geofence-enabled" checked style="accent-color:#000;">
+                            <span>Enforce Location</span>
+                        </label>
+                    </div>
+                    <p style="margin:0 0 0.65rem 0; font-size:0.75rem; color:#555;">
+                        Validates student presence inside the classroom using teacher laptop GPS reference point.
+                    </p>
+                    
+                    <div class="form-grid-2" style="margin-bottom:0.5rem;">
+                        <div class="input-group">
+                            <label style="display:block; font-weight:700; margin-bottom:0.25rem; font-size:0.78rem;">Allowed Radius (meters)</label>
+                            <input type="number" id="session-radius" value="50" min="10" max="500" step="5"
+                                   style="width:100%; padding:0.55rem 0.7rem; border:2px solid #000; border-radius:6px; font-family:inherit; font-weight:700;">
+                        </div>
+                        <div class="input-group">
+                            <label style="display:block; font-weight:700; margin-bottom:0.25rem; font-size:0.78rem;">Laptop GPS Reference</label>
+                            <button type="button" onclick="detectTeacherLocation()" id="btn-detect-loc" class="btn btn-sm btn-secondary" style="width:100%; padding:0.55rem; font-size:0.78rem; font-weight:800;">
+                                📍 Set Location
+                            </button>
+                        </div>
+                    </div>
+                    <div id="teacher-loc-status" style="font-size:0.72rem; color:#666; display:flex; align-items:center; gap:0.3rem;">
+                        <span>●</span> <span id="teacher-loc-text">Capturing teacher laptop GPS location...</span>
+                    </div>
+                    <input type="hidden" id="session-lat" value="">
+                    <input type="hidden" id="session-lng" value="">
                 </div>
 
                 <button type="submit" class="btn" style="width:100%; padding:0.85rem; font-size:1.05rem; justify-content:center; background:var(--yellow);">
@@ -478,8 +676,14 @@
             </div>
 
             <!-- Dynamic Session QR Code Container -->
-            <div style="margin:0 auto 1.25rem auto; max-width:240px; width:100%; aspect-ratio:1/1; padding:12px; background:var(--yellow); border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000;">
+            <div style="margin:0 auto 0.75rem auto; max-width:240px; width:100%; aspect-ratio:1/1; padding:12px; background:var(--yellow); border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000;">
                 <img id="projector-qr-img" src="" alt="Live Attendance QR" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
+            </div>
+
+            <!-- Dynamic QR Rotation Status & Countdown -->
+            <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+                <span class="badge" style="background:#e8f5e9; border:1.5px solid #000; color:#1b5e20; font-weight:700;">🔄 Dynamic Anti-Proxy QR</span>
+                <span id="dynamic-qr-countdown" class="badge badge-warning" style="font-family:monospace; font-weight:800; font-size:0.75rem;">Refreshes in: 25s</span>
             </div>
 
             <div style="display:flex; justify-content:center; align-items:center; gap:1.5rem; margin-bottom:1.25rem;">
@@ -564,9 +768,47 @@
     <script>
         let currentActiveToken = "{{ active_session['session_token'] if active_session else '' }}";
         let livePollInterval = null;
+        let dynamicQrInterval = null;
+
+        function detectTeacherLocation() {
+            const statusText = document.getElementById('teacher-loc-text');
+            const btn = document.getElementById('btn-detect-loc');
+            if (!navigator.geolocation) {
+                if (statusText) statusText.innerText = "Geolocation not supported by this browser.";
+                return;
+            }
+            if (btn) btn.innerText = "📍 Detecting...";
+            if (statusText) statusText.innerText = "Acquiring laptop GPS coordinates...";
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const acc = Math.round(position.coords.accuracy);
+                    const latInput = document.getElementById('session-lat');
+                    const lngInput = document.getElementById('session-lng');
+                    if (latInput) latInput.value = lat;
+                    if (lngInput) lngInput.value = lng;
+                    if (btn) btn.innerText = "✓ Location Set";
+                    if (statusText) {
+                        statusText.innerHTML = `<span style="color:#16a34a; font-weight:700;">✓ Classroom GPS active:</span> ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m accuracy)`;
+                    }
+                },
+                (err) => {
+                    console.warn("Location error:", err);
+                    if (btn) btn.innerText = "📍 Retry GPS";
+                    if (statusText) {
+                        statusText.innerHTML = `<span style="color:#d97706;">⚠️ Location permission needed. Allowed radius will activate once granted.</span>`;
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
 
         function openStartSessionModal() {
             document.getElementById('modal-start-session').style.display = 'flex';
+            // Auto-detect laptop location on modal open
+            detectTeacherLocation();
         }
 
         function closeStartSessionModal() {
@@ -589,24 +831,76 @@
 
         function viewLiveQr() {
             if (!currentActiveToken) return;
-            document.getElementById('projector-qr-img').src = `/session-qr/${currentActiveToken}`;
+            const qrImg = document.getElementById('projector-qr-img');
+            qrImg.src = `/session-dynamic-qr/${currentActiveToken}?t=${Date.now()}`;
             document.getElementById('projector-token-code').innerText = currentActiveToken;
             document.getElementById('modal-project-qr').style.display = 'flex';
+
+            // Start dynamic QR timer
+            startDynamicQrTimer();
         }
 
         function closeProjectQrModal() {
             document.getElementById('modal-project-qr').style.display = 'none';
+            if (dynamicQrInterval) {
+                clearInterval(dynamicQrInterval);
+                dynamicQrInterval = null;
+            }
+        }
+
+        function startDynamicQrTimer() {
+            if (dynamicQrInterval) clearInterval(dynamicQrInterval);
+            pollDynamicToken();
+            dynamicQrInterval = setInterval(pollDynamicToken, 1000);
+        }
+
+        let dynamicRemainingSeconds = 25;
+        function pollDynamicToken() {
+            if (!currentActiveToken) return;
+            dynamicRemainingSeconds -= 1;
+            const countdownEl = document.getElementById('dynamic-qr-countdown');
+            if (countdownEl) {
+                countdownEl.innerText = `Refreshes in: ${Math.max(1, dynamicRemainingSeconds)}s`;
+            }
+
+            if (dynamicRemainingSeconds <= 0) {
+                dynamicRemainingSeconds = 25;
+                const qrImg = document.getElementById('projector-qr-img');
+                if (qrImg) {
+                    qrImg.src = `/session-dynamic-qr/${currentActiveToken}?t=${Date.now()}`;
+                }
+                // Sync with server window
+                fetch(`/api/session-dynamic-token/${currentActiveToken}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success && res.token_info) {
+                        dynamicRemainingSeconds = res.token_info.seconds_remaining;
+                    }
+                })
+                .catch(() => {});
+            }
         }
 
         function submitStartSession(e) {
             e.preventDefault();
             const subject = document.getElementById('session-subject-select').value;
             const duration = document.getElementById('session-duration').value;
+            const radius = document.getElementById('session-radius').value;
+            const geofenceEnabled = document.getElementById('session-geofence-enabled').checked ? 1 : 0;
+            const lat = document.getElementById('session-lat').value;
+            const lng = document.getElementById('session-lng').value;
 
             fetch('/teacher/start-attendance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject: subject, duration: duration })
+                body: JSON.stringify({
+                    subject: subject,
+                    duration: duration,
+                    latitude: lat,
+                    longitude: lng,
+                    radius_meters: radius,
+                    geofence_enabled: geofenceEnabled
+                })
             })
             .then(res => res.json())
             .then(data => {
@@ -650,6 +944,7 @@
                     document.getElementById('active-session-banner').style.display = 'none';
                     closeProjectQrModal();
                     if (livePollInterval) clearInterval(livePollInterval);
+                    if (dynamicQrInterval) clearInterval(dynamicQrInterval);
                     alert("Attendance session ended successfully.");
                     window.location.reload();
                 } else {

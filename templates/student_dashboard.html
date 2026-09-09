@@ -57,9 +57,33 @@
                     <strong>🔔 {{ n['title'] }}:</strong> <span style="font-size:0.9rem; color:#333;">{{ n['message']
                         }}</span>
                 </div>
-                <span style="font-size:0.75rem; color:#777;">{{ n['created_at'].split(' ')[0] }}</span>
+                <span style="font-size:0.75rem; color:#777;">{{ (n['created_at'].split(' ')[0]) if (n['created_at'] and ' ' in n['created_at']) else (n['created_at'] or '') }}</span>
             </div>
             {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ⚠️ Attendance Shortage Warning Alert (< 75%) -->
+        {% if stats['has_shortage'] %}
+        <div style="background:#fff5f5; border:2.5px solid #000; border-left:8px solid #c62828; padding:0.9rem 1.25rem; border-radius:8px; box-shadow:4px 4px 0 #000; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <span style="font-size:1.25rem;">⚠️</span>
+                    <strong style="color:#b71c1c; font-size:1rem;">ATTENDANCE SHORTAGE WARNING: Below 75% Threshold</strong>
+                    <span class="badge badge-danger" style="font-weight:800;">{{ stats['overall_percentage'] }}% Current</span>
+                </div>
+                <div style="font-size:0.83rem; color:#444; margin-top:0.25rem;">
+                    Your total attendance is currently below the mandatory 75% requirement. You are in detention risk.
+                    {% if stats['shortage_subjects'] %}
+                    (Shortage in: <strong>{{ stats['shortage_subjects']|join(', ') }}</strong>)
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
+                    Scan Today's QR ⚡
+                </button>
+            </div>
         </div>
         {% endif %}
 
@@ -348,7 +372,7 @@
                             <td>{{ r['subject'] }}</td>
                             <td class="hide-mobile">{{ r['teacher'] }}</td>
                             <td class="hide-mobile">{{ r['lecture_time'] }}</td>
-                            <td><code>{{ r['timestamp'].split(' ')[1] if ' ' in r['timestamp'] else r['timestamp'] }}</code></td>
+                            <td><code>{{ (r['timestamp'].split(' ')[1]) if (r['timestamp'] and ' ' in r['timestamp']) else (r['timestamp'] or '-') }}</code></td>
                             <td>
                                 {% if r['status'] == 'Present' %}
                                 <span class="badge badge-success">✓ Present</span>
@@ -534,27 +558,63 @@
         }
 
         function recordAttendanceScan(sessionToken) {
-            showScanAlert("Verifying session and marking attendance...", true);
+            showScanAlert("📍 Acquiring GPS location for classroom verification...", true);
 
-            fetch('/student/scan-attendance', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_token: sessionToken })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showScanAlert("✅ " + data.message, true);
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        showScanAlert("⚠️ " + (data.error || "Failed to mark attendance"), false);
+            if (!navigator.geolocation) {
+                showScanAlert("❌ Geolocation is not supported by your browser. Please enable GPS location services to mark attendance.", false);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const acc = Math.round(position.coords.accuracy);
+
+                    if (acc > 250) {
+                        showScanAlert(`⚠️ Poor GPS accuracy (±${acc}m). Please move closer to a window or ensure High Accuracy GPS is enabled.`, false);
+                        return;
                     }
-                })
-                .catch(err => {
-                    showScanAlert("Network error: Could not reach attendance server.", false);
-                });
+
+                    showScanAlert(`📍 Verifying classroom proximity (±${acc}m)...`, true);
+
+                    fetch('/student/scan-attendance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_token: sessionToken,
+                            latitude: lat,
+                            longitude: lng,
+                            accuracy: acc
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showScanAlert("✅ " + data.message, true);
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1600);
+                        } else {
+                            showScanAlert("⚠️ " + (data.error || "Failed to mark attendance"), false);
+                        }
+                    })
+                    .catch(err => {
+                        showScanAlert("Network error: Could not connect to attendance server.", false);
+                    });
+                },
+                (err) => {
+                    console.warn("Student geolocation error:", err);
+                    let msg = "GPS Location Permission Required: Classroom geofencing requires your location to verify presence. Please allow location access in your browser.";
+                    if (err.code === err.POSITION_UNAVAILABLE) {
+                        msg = "GPS signal unavailable. Please ensure location services are turned on.";
+                    } else if (err.code === err.TIMEOUT) {
+                        msg = "Location request timed out. Please retry scanning.";
+                    }
+                    showScanAlert("❌ " + msg, false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
         }
 
         function showScanAlert(msg, isSuccess) {
