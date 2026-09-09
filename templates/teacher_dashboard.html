@@ -32,9 +32,9 @@
             <button onclick="openExportModal()" class="btn btn-sm btn-sage">
                 📊 Export Excel (.xlsx)
             </button>
-            <a href="/logout" class="btn btn-sm btn-danger">
+            <button onclick="confirmLogout()" class="btn btn-sm btn-danger">
                 Logout ↪
-            </a>
+            </button>
         </div>
     </nav>
 
@@ -43,15 +43,28 @@
 
         <!-- Notifications Bar -->
         {% if notifications %}
-        <div style="margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
-            {% for n in notifications %}
-            <div style="background:#fff; border:2px solid #000; border-left:6px solid #b7c6c2; padding:0.6rem 1rem; border-radius:6px; box-shadow:3px 3px 0 #000; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <strong>🔔 {{ n['title'] }}:</strong> <span style="font-size:0.9rem; color:#333;">{{ n['message'] }}</span>
-                </div>
-                <span style="font-size:0.72rem; color:#777;">{{ (n['created_at'].split(' ')[0]) if (n['created_at'] and ' ' in n['created_at']) else (n['created_at'] or '') }}</span>
+        <!-- Compact Notification Inbox -->
+        <div id="notif-box" style="margin-bottom:1.25rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
+                <span style="font-size:0.78rem; font-weight:800; color:#444; letter-spacing:0.03em;">🔔 NOTIFICATIONS ({{ notifications|length }})</span>
+                <button onclick="toggleNotifBox()" id="notif-toggle-btn"
+                    style="background:none; border:none; font-size:0.75rem; font-weight:700; color:#666; cursor:pointer; padding:0.15rem 0.4rem; border-radius:4px;">▼ Show</button>
             </div>
-            {% endfor %}
+            <div id="notif-list" style="display:none; flex-direction:column; gap:0.3rem;">
+                {% for n in notifications %}
+                <div class="notif-item{% if loop.index > 3 %} notif-extra" style="display:none{% endif %}" style="background:#fff; border:1.5px solid #ddd; border-left:4px solid {{ '#c62828' if n['type']=='danger' else ('#2e7d32' if n['type']=='success' else ('#f57c00' if n['type']=='warning' else '#b7c6c2')) }}; padding:0.4rem 0.65rem; border-radius:5px; display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                    <div style="flex:1; min-width:0;">
+                        <span style="font-size:0.77rem; font-weight:800; color:#111;">{{ n['title'] }}</span>
+                        <span style="font-size:0.73rem; color:#555; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n['message'] }}</span>
+                    </div>
+                    <span style="font-size:0.65rem; color:#999; white-space:nowrap; flex-shrink:0;">{{ (n['created_at'].split(' ')[0]) if (n['created_at'] and ' ' in n['created_at']) else '' }}</span>
+                </div>
+                {% endfor %}
+                {% if notifications|length > 3 %}
+                <button onclick="showAllNotifs()" id="show-more-notifs"
+                    style="font-size:0.72rem; font-weight:700; background:none; border:1.5px dashed #bbb; border-radius:5px; padding:0.3rem; color:#666; cursor:pointer; width:100%;">+ {{ notifications|length - 3 }} more notifications</button>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
 
@@ -1058,6 +1071,55 @@
         }
         updateRealtimeTeacherSchedule();
         setInterval(updateRealtimeTeacherSchedule, 30000);
+
+        // ── Notification inbox toggle ──
+        function toggleNotifBox() {
+            const list = document.getElementById('notif-list');
+            const btn = document.getElementById('notif-toggle-btn');
+            if (list.style.display === 'none' || list.style.display === '') {
+                list.style.display = 'flex';
+                btn.textContent = '▲ Hide';
+            } else {
+                list.style.display = 'none';
+                btn.textContent = '▼ Show';
+            }
+        }
+        function showAllNotifs() {
+            document.querySelectorAll('.notif-extra').forEach(el => el.style.display = 'flex');
+            const btn = document.getElementById('show-more-notifs');
+            if (btn) btn.style.display = 'none';
+        }
+
+        // ── Logout confirmation ──
+        function confirmLogout() {
+            document.getElementById('logout-confirm-modal').style.display = 'flex';
+        }
+        function cancelLogout() {
+            document.getElementById('logout-confirm-modal').style.display = 'none';
+        }
+        function doLogout() {
+            window.location.href = '/logout';
+        }
+
+        // ── Back button guard (prevent accidental logout) ──
+        history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', function(e) {
+            history.pushState(null, '', window.location.href);
+            document.getElementById('logout-confirm-modal').style.display = 'flex';
+        });
     </script>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logout-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#fff; border:3px solid #000; border-radius:14px; box-shadow:6px 6px 0 #000; padding:1.75rem 1.5rem; max-width:340px; width:100%; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🔒</div>
+            <h3 style="margin:0 0 0.5rem; font-size:1.1rem; font-weight:800;">Log Out?</h3>
+            <p style="font-size:0.88rem; color:#555; margin:0 0 1.25rem;">Are you sure you want to log out of the Faculty portal?</p>
+            <div style="display:flex; gap:0.75rem; justify-content:center;">
+                <button onclick="cancelLogout()" class="btn btn-sm" style="background:#f4f4f5; border:2px solid #000; font-weight:800;">Cancel</button>
+                <button onclick="doLogout()" class="btn btn-sm btn-danger" style="font-weight:800;">Yes, Log Out</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
