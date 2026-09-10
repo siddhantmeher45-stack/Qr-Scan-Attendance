@@ -43,10 +43,6 @@
             <span class="badge badge-primary" style="margin-left:0.5rem; font-size:0.75rem;">Faculty Hub</span>
         </a>
         <div class="nb-nav-right">
-            <a href="/teacher-dashboard" class="btn btn-sm"
-               style="background:#f4f4f5; border:2px solid #000; font-weight:800; box-shadow:2px 2px 0 #000; text-decoration:none; font-size:0.78rem; padding:0.35rem 0.7rem;">
-                &#8592; Home
-            </a>
             <button onclick="openStartSessionModal()" class="btn btn-sm btn-primary"
                     style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0 #000; font-size:0.78rem; padding:0.35rem 0.7rem;">
                 &#9889; Start Session
@@ -756,10 +752,10 @@
             </div>
 
             <div class="btn-group-responsive" style="justify-content:center;">
-                <button onclick="closeProjectQrModal()" class="btn btn-sm" style="background:#000; color:#fff;">
-                    Done / Keep Live in Background
+                <button onclick="closeProjectQrModal()" class="btn btn-sm" style="background:#000; color:#fff; font-weight:700;">
+                    &#8592; Back to Dashboard
                 </button>
-                <button onclick="stopAttendanceSession()" class="btn btn-sm" style="background:#ef4444; color:#fff;">
+                <button onclick="stopAttendanceSession()" class="btn btn-sm" style="background:#ef4444; color:#fff; font-weight:700;">
                     End Session
                 </button>
             </div>
@@ -1082,6 +1078,10 @@
                 } else {
                     alert("Error: " + data.error);
                 }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to stop attendance session. Please check your connection.");
             });
         }
 

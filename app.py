@@ -370,8 +370,11 @@ def teacher_stop_attendance():
             session_token = active_session['session_token']
 
     if session_token:
-        finalize_attendance_session(session_token)
-        return jsonify({"success": True, "message": "Attendance session closed successfully. All unscanned students marked absent."})
+        try:
+            finalize_attendance_session(session_token)
+            return jsonify({"success": True, "message": "Attendance session closed successfully. All unscanned students marked absent."})
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Failed to finalize attendance: {str(e)}"}), 500
     
     return jsonify({"success": False, "error": "No active session found to close."}), 400
 

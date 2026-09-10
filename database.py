@@ -478,7 +478,7 @@ def finalize_attendance_session(session_id_or_token, conn=None):
             cursor.execute('''
                 INSERT OR IGNORE INTO attendance_records 
                 (session_id, session_token, pid, student_name, roll_number, department, year, division, subject, teacher_name, date, day, lecture_time, timestamp, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Absent')
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 session_id, session_token, s['pid'], s['name'], s['roll_number'],
                 s['department'], s['year'], s['division'], subject,
