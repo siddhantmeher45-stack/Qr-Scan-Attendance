@@ -850,7 +850,7 @@ def get_student_stats(pid):
         if total_held > 0:
             pct = round((attended_count / total_held) * 100, 1)
         else:
-            pct = 100.0  # No sessions held yet for this subject
+            pct = 0.0  # No sessions held yet for this subject — show 0, not fake 100%
         
         is_eligible = pct >= 75.0
         if total_held > 0 and not is_eligible:
@@ -875,7 +875,7 @@ def get_student_stats(pid):
     if total_classes > 0:
         overall_percentage = round((total_attended / total_classes) * 100, 1)
     else:
-        overall_percentage = 100.0  # Brand new semester / 0 sessions held
+        overall_percentage = 0.0  # No sessions held yet — show 0, not fake 100%
 
     total_absent = max(0, total_classes - total_attended)
     has_shortage = (total_classes >= 1 and overall_percentage < 75.0)

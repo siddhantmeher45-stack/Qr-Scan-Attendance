@@ -9,6 +9,23 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        .notif-item {
+            background: #fff;
+            border: 1.5px solid #ddd;
+            border-radius: 5px;
+            padding: 0.4rem 0.65rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .notif-item[data-hidden="1"] { display: none; }
+        .notif-item[data-ntype="danger"]  { border-left: 4px solid #c62828; }
+        .notif-item[data-ntype="success"] { border-left: 4px solid #2e7d32; }
+        .notif-item[data-ntype="warning"] { border-left: 4px solid #f57c00; }
+        .notif-item[data-ntype="info"]    { border-left: 4px solid var(--yellow); }
+    </style>
 </head>
 
 <body class="dot-bg">
@@ -58,7 +75,10 @@
             </div>
             <div id="notif-list" style="display:none; flex-direction:column; gap:0.3rem;">
                 {% for n in notifications %}
-                <div class="notif-item{% if loop.index > 3 %} notif-extra" style="display:none{% endif %}" style="background:#fff; border:1.5px solid #ddd; border-left:4px solid {{ '#c62828' if n['type']=='danger' else ('#2e7d32' if n['type']=='success' else ('#f57c00' if n['type']=='warning' else 'var(--yellow)')) }}; padding:0.4rem 0.65rem; border-radius:5px; display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                <div class="notif-item"
+                    data-notif-index="{{ loop.index }}"
+                    data-ntype="{{ n['type'] }}"
+                    data-hidden="{% if loop.index > 3 %}1{% else %}0{% endif %}">
                     <div style="flex:1; min-width:0;">
                         <span style="font-size:0.77rem; font-weight:800; color:#111;">{{ n['title'] }}</span>
                         <span style="font-size:0.73rem; color:#555; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n['message'] }}</span>
@@ -722,7 +742,9 @@
             }
         }
         function showAllNotifs() {
-            document.querySelectorAll('.notif-extra').forEach(el => el.style.display = 'flex');
+            document.querySelectorAll('.notif-item[data-notif-index]').forEach(el => {
+                if (parseInt(el.dataset.notifIndex) > 3) el.removeAttribute('data-hidden');
+            });
             const btn = document.getElementById('show-more-notifs');
             if (btn) btn.style.display = 'none';
         }

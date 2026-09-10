@@ -6,6 +6,23 @@
     <title>AttendQR | Faculty Dashboard</title>
     <meta name="description" content="Faculty Attendance Management and Live QR Session Portal for Fourth Year B.E. ECS.">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .notif-item {
+            background: #fff;
+            border: 1.5px solid #ddd;
+            border-radius: 5px;
+            padding: 0.4rem 0.65rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .notif-item[data-hidden="1"] { display: none; }
+        .notif-item[data-ntype="danger"]  { border-left: 4px solid #c62828; }
+        .notif-item[data-ntype="success"] { border-left: 4px solid #2e7d32; }
+        .notif-item[data-ntype="warning"] { border-left: 4px solid #f57c00; }
+        .notif-item[data-ntype="info"]    { border-left: 4px solid #b7c6c2; }
+    </style>
 </head>
 <body class="dot-bg">
 
@@ -26,6 +43,9 @@
             <span class="badge badge-primary" style="margin-left:0.5rem; font-size:0.75rem;">Faculty Hub</span>
         </a>
         <div class="nb-nav-right" style="display:flex; align-items:center; gap:0.75rem;">
+            <a href="/teacher-dashboard" class="btn btn-sm" style="background:#f4f4f5; border:2px solid #000; font-weight:800; box-shadow:2px 2px 0 #000; text-decoration:none;">
+                ← Dashboard
+            </a>
             <button onclick="openStartSessionModal()" class="btn btn-sm btn-primary" style="font-weight:800; border:2px solid #000; box-shadow:3px 3px 0 #000;">
                 ⚡ Start Attendance Session
             </button>
@@ -52,7 +72,10 @@
             </div>
             <div id="notif-list" style="display:none; flex-direction:column; gap:0.3rem;">
                 {% for n in notifications %}
-                <div class="notif-item{% if loop.index > 3 %} notif-extra" style="display:none{% endif %}" style="background:#fff; border:1.5px solid #ddd; border-left:4px solid {{ '#c62828' if n['type']=='danger' else ('#2e7d32' if n['type']=='success' else ('#f57c00' if n['type']=='warning' else '#b7c6c2')) }}; padding:0.4rem 0.65rem; border-radius:5px; display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                <div class="notif-item"
+                    data-notif-index="{{ loop.index }}"
+                    data-ntype="{{ n['type'] }}"
+                    data-hidden="{% if loop.index > 3 %}1{% else %}0{% endif %}">
                     <div style="flex:1; min-width:0;">
                         <span style="font-size:0.77rem; font-weight:800; color:#111;">{{ n['title'] }}</span>
                         <span style="font-size:0.73rem; color:#555; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n['message'] }}</span>
@@ -637,16 +660,16 @@
                         <label style="font-weight:800; font-size:0.85rem; display:flex; align-items:center; gap:0.35rem;">
                             <span>📍</span> Classroom Geofencing
                         </label>
-                        <label style="font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
-                            <input type="checkbox" id="session-geofence-enabled" checked style="accent-color:#000;">
+                        <label style="font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:0.35rem; cursor:pointer;" id="geofence-toggle-label">
+                            <input type="checkbox" id="session-geofence-enabled" style="accent-color:#000;">
                             <span>Enforce Location</span>
                         </label>
                     </div>
                     <p style="margin:0 0 0.65rem 0; font-size:0.75rem; color:#555;">
                         Validates student presence inside the classroom using teacher laptop GPS reference point.
                     </p>
-                    
-                    <div class="form-grid-2" style="margin-bottom:0.5rem;">
+
+                    <div class="form-grid-2" style="margin-bottom:0.65rem;">
                         <div class="input-group">
                             <label style="display:block; font-weight:700; margin-bottom:0.25rem; font-size:0.78rem;">Allowed Radius (meters)</label>
                             <input type="number" id="session-radius" value="50" min="10" max="500" step="5"
@@ -654,14 +677,21 @@
                         </div>
                         <div class="input-group">
                             <label style="display:block; font-weight:700; margin-bottom:0.25rem; font-size:0.78rem;">Laptop GPS Reference</label>
-                            <button type="button" onclick="detectTeacherLocation()" id="btn-detect-loc" class="btn btn-sm btn-secondary" style="width:100%; padding:0.55rem; font-size:0.78rem; font-weight:800;">
-                                📍 Set Location
+                            <button type="button" onclick="detectTeacherLocation()" id="btn-detect-loc"
+                                class="btn btn-sm btn-secondary"
+                                style="width:100%; padding:0.55rem; font-size:0.78rem; font-weight:800;">
+                                📍 Set GPS Location
                             </button>
                         </div>
                     </div>
-                    <div id="teacher-loc-status" style="font-size:0.72rem; color:#666; display:flex; align-items:center; gap:0.3rem;">
-                        <span>●</span> <span id="teacher-loc-text">Capturing teacher laptop GPS location...</span>
+
+                    <!-- GPS Status Indicator -->
+                    <div id="teacher-loc-status"
+                        style="font-size:0.75rem; display:flex; align-items:flex-start; gap:0.4rem; padding:0.5rem 0.6rem; border-radius:6px; border:1.5px solid #e5e7eb; background:#fff;">
+                        <span id="teacher-loc-dot" style="font-size:0.9rem; flex-shrink:0; margin-top:1px;">⬤</span>
+                        <span id="teacher-loc-text" style="color:#555;">Click "Set GPS Location" to capture classroom coordinates for geofencing.</span>
                     </div>
+
                     <input type="hidden" id="session-lat" value="">
                     <input type="hidden" id="session-lng" value="">
                 </div>
@@ -783,15 +813,73 @@
         let livePollInterval = null;
         let dynamicQrInterval = null;
 
-        function detectTeacherLocation() {
-            const statusText = document.getElementById('teacher-loc-text');
+        // ── GPS State Tracker ──
+        let gpsFixed = false; // true when valid coords are stored
+
+        function setGpsStatus(state, message) {
+            // state: 'idle' | 'detecting' | 'success' | 'error'
+            const dot = document.getElementById('teacher-loc-dot');
+            const text = document.getElementById('teacher-loc-text');
+            const statusBox = document.getElementById('teacher-loc-status');
             const btn = document.getElementById('btn-detect-loc');
+            const geofenceCheckbox = document.getElementById('session-geofence-enabled');
+
+            if (!dot || !text || !statusBox) return;
+
+            if (state === 'detecting') {
+                dot.textContent = '⬤';
+                dot.style.color = '#f59e0b';
+                statusBox.style.borderColor = '#f59e0b';
+                statusBox.style.background = '#fffbeb';
+                text.style.color = '#92400e';
+                text.textContent = message || 'Acquiring GPS coordinates… please wait.';
+                if (btn) { btn.textContent = '⟳ Detecting…'; btn.disabled = true; }
+                gpsFixed = false;
+            } else if (state === 'success') {
+                dot.textContent = '⬤';
+                dot.style.color = '#16a34a';
+                statusBox.style.borderColor = '#16a34a';
+                statusBox.style.background = '#f0fdf4';
+                text.style.color = '#14532d';
+                text.innerHTML = message;
+                if (btn) { btn.textContent = '🔄 Retry GPS'; btn.disabled = false; }
+                if (geofenceCheckbox) { geofenceCheckbox.checked = true; geofenceCheckbox.disabled = false; }
+                gpsFixed = true;
+            } else if (state === 'error') {
+                dot.textContent = '⬤';
+                dot.style.color = '#dc2626';
+                statusBox.style.borderColor = '#dc2626';
+                statusBox.style.background = '#fff5f5';
+                text.style.color = '#7f1d1d';
+                text.innerHTML = message || 'GPS unavailable.';
+                if (btn) { btn.textContent = '📍 Retry GPS'; btn.disabled = false; }
+                // Auto-uncheck Enforce Location when GPS fails
+                if (geofenceCheckbox) { geofenceCheckbox.checked = false; geofenceCheckbox.disabled = false; }
+                // Clear coords
+                const latInput = document.getElementById('session-lat');
+                const lngInput = document.getElementById('session-lng');
+                if (latInput) latInput.value = '';
+                if (lngInput) lngInput.value = '';
+                gpsFixed = false;
+            } else {
+                // idle
+                dot.textContent = '⬤';
+                dot.style.color = '#9ca3af';
+                statusBox.style.borderColor = '#e5e7eb';
+                statusBox.style.background = '#fff';
+                text.style.color = '#555';
+                text.textContent = message || 'Click "Set GPS Location" to capture classroom coordinates.';
+                if (btn) { btn.textContent = '📍 Set GPS Location'; btn.disabled = false; }
+                gpsFixed = false;
+            }
+        }
+
+        function detectTeacherLocation() {
             if (!navigator.geolocation) {
-                if (statusText) statusText.innerText = "Geolocation not supported by this browser.";
+                setGpsStatus('error', '⛔ Geolocation is not supported by this browser. Cannot use GPS-based geofencing.');
                 return;
             }
-            if (btn) btn.innerText = "📍 Detecting...";
-            if (statusText) statusText.innerText = "Acquiring laptop GPS coordinates...";
+            setGpsStatus('detecting', 'Requesting location permission and acquiring GPS signal…');
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -802,26 +890,41 @@
                     const lngInput = document.getElementById('session-lng');
                     if (latInput) latInput.value = lat;
                     if (lngInput) lngInput.value = lng;
-                    if (btn) btn.innerText = "✓ Location Set";
-                    if (statusText) {
-                        statusText.innerHTML = `<span style="color:#16a34a; font-weight:700;">✓ Classroom GPS active:</span> ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m accuracy)`;
-                    }
+                    setGpsStatus('success',
+                        `<strong>✓ GPS Captured:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}&nbsp;&nbsp;<span style="opacity:0.7">(±${acc}m accuracy)</span>`);
                 },
                 (err) => {
-                    console.warn("Location error:", err);
-                    if (btn) btn.innerText = "📍 Retry GPS";
-                    if (statusText) {
-                        statusText.innerHTML = `<span style="color:#d97706;">⚠️ Location permission needed. Allowed radius will activate once granted.</span>`;
+                    let msg = '';
+                    switch (err.code) {
+                        case err.PERMISSION_DENIED:
+                            msg = '⚠️ <strong>Location permission denied.</strong> Please allow location access in your browser settings, then click Retry GPS. "Enforce Location" has been disabled.';
+                            break;
+                        case err.POSITION_UNAVAILABLE:
+                            msg = '⚠️ <strong>GPS signal unavailable.</strong> Ensure you are connected and location services are enabled. Click Retry GPS to try again.';
+                            break;
+                        case err.TIMEOUT:
+                            msg = '⚠️ <strong>GPS timed out.</strong> The location request took too long. Click Retry GPS to try again.';
+                            break;
+                        default:
+                            msg = `⚠️ <strong>GPS error:</strong> ${err.message || 'Unknown error'}. Click Retry GPS.`;
                     }
+                    setGpsStatus('error', msg);
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
             );
         }
 
         function openStartSessionModal() {
             document.getElementById('modal-start-session').style.display = 'flex';
-            // Auto-detect laptop location on modal open
-            detectTeacherLocation();
+            // Reset GPS state to idle on each open (allows fresh capture)
+            const latInput = document.getElementById('session-lat');
+            const lngInput = document.getElementById('session-lng');
+            if (latInput && latInput.value === '') setGpsStatus('idle');
+            else if (latInput && latInput.value !== '') {
+                // Coords already set from a previous open — keep success state
+            } else {
+                setGpsStatus('idle');
+            }
         }
 
         function closeStartSessionModal() {
@@ -903,14 +1006,26 @@
             const lat = document.getElementById('session-lat').value;
             const lng = document.getElementById('session-lng').value;
 
+            // ── Geofence Guard: block if Enforce Location is on but no GPS coords captured ──
+            if (geofenceEnabled && (!lat || !lng || lat.trim() === '' || lng.trim() === '')) {
+                alert(
+                    "GPS Location Required:\n\n" +
+                    "'Enforce Location' is enabled but no GPS coordinates have been captured.\n\n" +
+                    "Please click 'Set GPS Location' (or 'Retry GPS') and allow location access in your browser, " +
+                    "then try again.\n\n" +
+                    "Alternatively, uncheck 'Enforce Location' to start the session without geofencing."
+                );
+                return;
+            }
+
             fetch('/teacher/start-attendance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     subject: subject,
                     duration: duration,
-                    latitude: lat,
-                    longitude: lng,
+                    latitude: lat || null,
+                    longitude: lng || null,
                     radius_meters: radius,
                     geofence_enabled: geofenceEnabled
                 })
@@ -938,7 +1053,7 @@
             })
             .catch(err => {
                 console.error(err);
-                alert("Failed to start session.");
+                alert("Failed to start session. Please check your connection and try again.");
             });
         }
 
@@ -1085,7 +1200,9 @@
             }
         }
         function showAllNotifs() {
-            document.querySelectorAll('.notif-extra').forEach(el => el.style.display = 'flex');
+            document.querySelectorAll('.notif-item[data-notif-index]').forEach(el => {
+                if (parseInt(el.dataset.notifIndex) > 3) el.removeAttribute('data-hidden');
+            });
             const btn = document.getElementById('show-more-notifs');
             if (btn) btn.style.display = 'none';
         }
