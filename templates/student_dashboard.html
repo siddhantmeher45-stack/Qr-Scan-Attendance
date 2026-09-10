@@ -432,33 +432,33 @@
     <!-- ======================================================== -->
     <!-- MODAL 1: QR ATTENDANCE SCANNER -->
     <!-- ======================================================== -->
-    <div id="modal-scanner" class="modal-overlay">
-        <div class="modal-content">
+    <div id="modal-scanner" class="modal-overlay" style="padding:0.5rem;">
+        <div class="modal-content" style="max-width:420px; width:100%; max-height:94vh; padding:1.15rem 1.25rem; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;">
             <button onclick="closeScannerModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <div class="modal-header-safe">
-                <span class="badge badge-warning" style="margin-bottom:0.4rem; display:inline-block;">Live Scanner</span>
-                <h2 style="margin:0 0 0.4rem 0; font-size:1.4rem;">Scan Attendance QR</h2>
-                <p style="margin:0 0 1rem 0; font-size:0.85rem; color:#555;">Point your camera at the teacher's projected attendance session QR code.</p>
+            <div class="modal-header-safe" style="margin-bottom:0.35rem;">
+                <span class="badge badge-warning" style="margin-bottom:0.2rem; display:inline-block; font-size:0.72rem; padding:0.15rem 0.45rem;">Live Scanner</span>
+                <h2 style="margin:0 0 0.15rem 0; font-size:1.25rem; font-weight:800;">Scan Attendance QR</h2>
+                <p style="margin:0; font-size:0.75rem; color:#555;">Point your camera at the teacher's projected QR code.</p>
             </div>
 
             <div id="scan-alert"
-                style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; font-weight:700;">
+                style="display:none; padding:0.4rem 0.75rem; border-radius:6px; margin-bottom:0.4rem; font-size:0.78rem; font-weight:700;">
             </div>
 
-            <!-- Viewfinder Container -->
+            <!-- Viewfinder Container (Fixed-Screen Compact Size) -->
             <div
-                style="width:100%; max-width:340px; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; overflow:hidden; background:#000;">
+                style="width:100%; max-width:210px; height:210px; margin:0 auto 0.4rem auto; border:3px solid #000; border-radius:12px; overflow:hidden; background:#000; flex-shrink:0;">
                 <div id="qr-reader" style="width:100%;"></div>
             </div>
 
             <!-- Manual Token Fallback -->
-            <div style="border-top:2px dashed #ccc; padding-top:1rem; margin-top:1rem;">
-                <label style="display:block; font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">Or Enter Session Token Manually:</label>
-                <div style="display:flex; gap:0.5rem;">
-                    <input type="text" id="manual-token-input" placeholder="e.g. ATT-XXXXXXXX" style="flex:1;">
+            <div style="border-top:1.5px dashed #ccc; padding-top:0.45rem; margin-top:0.35rem;">
+                <label style="display:block; font-weight:700; font-size:0.74rem; margin-bottom:0.25rem;">Or Enter Session Token Manually:</label>
+                <div style="display:flex; gap:0.4rem;">
+                    <input type="text" id="manual-token-input" placeholder="e.g. ATT-XXXXXXXX" style="flex:1; padding:0.38rem 0.55rem; font-size:0.78rem;">
                     <button type="button" onclick="submitManualToken()" class="btn btn-sm btn-primary"
-                        style="font-weight:800; white-space:nowrap;">
+                        style="font-weight:800; white-space:nowrap; font-size:0.78rem; padding:0.38rem 0.7rem;">
                         Submit →
                     </button>
                 </div>
@@ -469,28 +469,28 @@
     <!-- ======================================================== -->
     <!-- MODAL 2: STUDENT PROFILE QR -->
     <!-- ======================================================== -->
-    <div id="modal-student-qr" class="modal-overlay">
-        <div class="modal-content" style="text-align:center; max-width:440px;">
+    <div id="modal-student-qr" class="modal-overlay" style="padding:0.5rem;">
+        <div class="modal-content" style="text-align:center; max-width:400px; width:100%; max-height:94vh; padding:1.15rem 1.25rem; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; align-items:center;">
             <button onclick="closeStudentQrModal()" class="modal-close-btn" aria-label="Close modal">✕</button>
 
-            <div class="modal-header-safe">
-                <span class="badge badge-primary" style="margin-bottom:0.4rem; display:inline-block;">Student ID QR</span>
-                <h2 style="margin:0 0 0.3rem 0; font-size:1.4rem;">{{ student['name'] }}</h2>
-                <p style="margin:0 0 1.25rem 0; font-size:0.85rem; color:#555;">PID: <code>{{ student['pid'] }}</code> | Roll: <strong>{{ student['roll_number'] }}</strong></p>
+            <div class="modal-header-safe" style="margin-bottom:0.35rem;">
+                <span class="badge badge-primary" style="margin-bottom:0.2rem; display:inline-block; font-size:0.72rem; padding:0.15rem 0.45rem;">Student ID QR</span>
+                <h2 style="margin:0 0 0.15rem 0; font-size:1.25rem; font-weight:800;">{{ student['name'] }}</h2>
+                <p style="margin:0; font-size:0.75rem; color:#555;">PID: <code>{{ student['pid'] }}</code> | Roll: <strong>{{ student['roll_number'] }}</strong></p>
             </div>
 
             <div
-                style="width:240px; height:240px; max-width:100%; aspect-ratio:1/1; margin:0 auto 1.25rem auto; border:3px solid #000; border-radius:12px; padding:10px; background:#fff; box-shadow:4px 4px 0 #000;">
+                style="width:clamp(140px, 24vh, 180px); height:clamp(140px, 24vh, 180px); margin:0 auto 0.45rem auto; border:3px solid #000; border-radius:12px; padding:8px; background:#fff; box-shadow:3px 3px 0 #000; flex-shrink:0;">
                 <img src="/student-qr/{{ student['pid'] }}" alt="Student ID QR"
                     style="width:100%; height:100%; object-fit:contain;">
             </div>
 
-            <div class="btn-group-responsive" style="justify-content:center; gap:0.75rem;">
+            <div style="display:flex; gap:0.5rem; justify-content:center; width:100%;">
                 <a href="/student-qr/{{ student['pid'] }}?download=1" class="btn btn-sm btn-primary"
-                    style="font-weight:800;">
-                    Download QR Image 📥
+                    style="font-weight:800; font-size:0.8rem; padding:0.42rem 0.8rem; flex:1; justify-content:center; text-decoration:none;">
+                    Download 📥
                 </a>
-                <button onclick="closeStudentQrModal()" class="btn btn-sm btn-secondary" style="font-weight:800;">
+                <button onclick="closeStudentQrModal()" class="btn btn-sm btn-secondary" style="font-weight:800; font-size:0.8rem; padding:0.42rem 0.8rem; flex:1; justify-content:center;">
                     Close
                 </button>
             </div>
@@ -591,63 +591,73 @@
             recordAttendanceScan(token);
         }
 
+        function sendAttendanceRequest(sessionToken, lat, lng, acc) {
+            showScanAlert(lat ? `📍 Verifying proximity (±${acc || 15}m)...` : "⚡ Submitting attendance...", true);
+
+            fetch('/student/scan-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_token: sessionToken,
+                    latitude: lat,
+                    longitude: lng,
+                    accuracy: acc
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showScanAlert("✅ " + data.message, true);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showScanAlert("⚠️ " + (data.error || "Failed to mark attendance"), false);
+                }
+            })
+            .catch(err => {
+                showScanAlert("Network error: Could not connect to attendance server.", false);
+            });
+        }
+
         function recordAttendanceScan(sessionToken) {
-            showScanAlert("📍 Acquiring GPS location for classroom verification...", true);
+            showScanAlert("📍 Checking location...", true);
 
             if (!navigator.geolocation) {
-                showScanAlert("❌ Geolocation is not supported by your browser. Please enable GPS location services to mark attendance.", false);
+                // If browser has no geolocation support, still attempt (works when geofencing is off)
+                sendAttendanceRequest(sessionToken, null, null, null);
                 return;
             }
 
+            // Attempt fast high-accuracy first (4s)
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const acc = Math.round(position.coords.accuracy);
-
-                    if (acc > 250) {
-                        showScanAlert(`⚠️ Poor GPS accuracy (±${acc}m). Please move closer to a window or ensure High Accuracy GPS is enabled.`, false);
-                        return;
-                    }
-
-                    showScanAlert(`📍 Verifying classroom proximity (±${acc}m)...`, true);
-
-                    fetch('/student/scan-attendance', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            session_token: sessionToken,
-                            latitude: lat,
-                            longitude: lng,
-                            accuracy: acc
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            showScanAlert("✅ " + data.message, true);
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1600);
-                        } else {
-                            showScanAlert("⚠️ " + (data.error || "Failed to mark attendance"), false);
-                        }
-                    })
-                    .catch(err => {
-                        showScanAlert("Network error: Could not connect to attendance server.", false);
-                    });
+                    sendAttendanceRequest(sessionToken, lat, lng, acc);
                 },
                 (err) => {
-                    console.warn("Student geolocation error:", err);
-                    let msg = "GPS Location Permission Required: Classroom geofencing requires your location to verify presence. Please allow location access in your browser.";
-                    if (err.code === err.POSITION_UNAVAILABLE) {
-                        msg = "GPS signal unavailable. Please ensure location services are turned on.";
-                    } else if (err.code === err.TIMEOUT) {
-                        msg = "Location request timed out. Please retry scanning.";
-                    }
-                    showScanAlert("❌ " + msg, false);
+                    console.warn("High-accuracy GPS failed, trying mobile network fallback:", err);
+                    // Fallback to cellular/wifi network location (fast & reliable on phones)
+                    navigator.geolocation.getCurrentPosition(
+                        (fallbackPos) => {
+                            const lat = fallbackPos.coords.latitude;
+                            const lng = fallbackPos.coords.longitude;
+                            const acc = Math.round(fallbackPos.coords.accuracy);
+                            sendAttendanceRequest(sessionToken, lat, lng, acc);
+                        },
+                        (fallbackErr) => {
+                            console.warn("Fallback geolocation also unavailable/denied:", fallbackErr);
+                            // Even if location permission is denied or unavailable on mobile, STILL submit:
+                            // If geofencing is disabled, student gets marked present immediately!
+                            // If geofencing is enabled, backend returns clear instructions on allowing location.
+                            sendAttendanceRequest(sessionToken, null, null, null);
+                        },
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
+                    );
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
             );
         }
 

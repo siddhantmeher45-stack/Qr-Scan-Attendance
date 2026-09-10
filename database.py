@@ -597,7 +597,7 @@ def mark_qr_attendance(session_token_or_payload, student_pid, student_lat=None, 
     if geo_enabled and teacher_lat is not None and teacher_lng is not None:
         if student_lat is None or student_lng is None or str(student_lat).strip() == '' or str(student_lng).strip() == '':
             conn.close()
-            return False, "GPS Location Required: Classroom geofencing is enabled for this lecture. Please enable GPS/Location on your device to mark attendance."
+            return False, "GPS Location Required: Classroom geofencing is enabled for this lecture. Tap the 🔒/settings icon in your browser address bar → allow Location, and retry scanning."
 
         try:
             student_lat_val = float(student_lat)
