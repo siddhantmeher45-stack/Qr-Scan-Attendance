@@ -48,15 +48,22 @@
                     style="background:#000; color:#ffe17c; padding:0.1rem 0.35rem; border-radius:4px; margin-left:2px;">QR</span></span>
             <span class="badge badge-primary" style="margin-left:0.5rem; font-size:0.75rem;">Student Hub</span>
         </a>
-        <div class="nb-nav-right">
-            <button onclick="openScannerModal()" class="btn btn-sm btn-primary" style="font-weight:800;">
-                📷 Scan Lecture QR
+        <div class="nb-nav-right" style="display:flex; align-items:center; gap:0.4rem;">
+            <a href="/student-dashboard" class="btn btn-sm"
+               style="background:#f4f4f5; border:2px solid #000; font-weight:800; box-shadow:2px 2px 0 #000; text-decoration:none; font-size:0.78rem; padding:0.35rem 0.65rem;">
+                &#8592; Home
+            </a>
+            <button onclick="openScannerModal()" class="btn btn-sm btn-primary"
+                    style="font-weight:800; font-size:0.78rem; padding:0.35rem 0.65rem;">
+                &#128247; Scan QR
             </button>
-            <button onclick="openStudentQrModal()" class="btn btn-sm btn-secondary" style="font-weight:800;">
-                🪪 My Student QR
+            <button onclick="openStudentQrModal()" class="btn btn-sm btn-secondary"
+                    style="font-weight:800; font-size:0.78rem; padding:0.35rem 0.65rem;">
+                &#129178; My QR
             </button>
-            <button onclick="confirmLogout()" class="btn btn-sm btn-danger">
-                Logout ↪
+            <button onclick="confirmLogout()" class="btn btn-sm btn-danger"
+                    style="font-size:0.78rem; padding:0.35rem 0.65rem;">
+                Logout
             </button>
         </div>
     </nav>
