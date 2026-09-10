@@ -614,18 +614,32 @@ def mark_qr_attendance(session_token_or_payload, student_pid, student_lat=None, 
             conn.close()
             return False, "Unable to compute location distance."
 
+        # Indoor GPS & Wi-Fi triangulation tolerance:
+        # Laptops indoors typically report Wi-Fi BSSID location (accuracy ±100m to 200m).
+        # Mobile phones indoors report cellular/GPS location (accuracy ±50m to 150m).
+        # Add device accuracy buffer and ensure minimum 250m classroom/lab radius tolerance
+        # so students in the same room are verified, while rejecting remote proxy scans (>250m).
+        device_accuracy = 0.0
+        if accuracy is not None:
+            try:
+                device_accuracy = max(0.0, float(accuracy))
+            except Exception:
+                pass
+
+        effective_radius = max(float(allowed_radius) + device_accuracy, 250.0)
+
         # Reject if outside allowed radius
-        if distance > allowed_radius:
+        if distance > effective_radius:
             conn.close()
             # Functional notification for rejected attendance
             add_notification(
                 target_role='student',
                 target_id=student_pid,
                 title='Attendance Rejected (Outside Geofence)',
-                message=f"Attendance for {session_row['subject']} rejected: You were {round(distance, 1)}m away from classroom (Allowed: {int(allowed_radius)}m).",
+                message=f"Attendance for {session_row['subject']} rejected: You were {round(distance, 1)}m away from classroom (Allowed: {int(effective_radius)}m).",
                 type='danger'
             )
-            return False, f"Location verification failed: You are {round(distance, 1)}m away from the classroom (Maximum allowed: {int(allowed_radius)}m)."
+            return False, f"Location verification failed: You are {round(distance, 1)}m away from the classroom (Maximum allowed: {int(effective_radius)}m)."
     else:
         if student_lat is not None and student_lng is not None:
             try:
